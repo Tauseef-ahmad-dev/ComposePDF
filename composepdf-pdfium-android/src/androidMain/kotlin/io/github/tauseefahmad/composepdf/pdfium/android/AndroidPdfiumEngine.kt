@@ -81,7 +81,7 @@ class AndroidPdfiumEngine(
             val pdf = requireNotNull(document) { "No PDF document is open." }
             val count = pdf.getPageCount()
             require(pageIndex in 0 until count) { "Page index is out of range." }
-            pdf.openPage(pageIndex).use { page ->
+            requireNotNull(pdf.openPage(pageIndex)) { "Unable to open PDF page $pageIndex." }.use { page ->
                 PdfPageMetadata(
                     pageIndex = pageIndex,
                     width = page.getPageWidthPoint().toFloat(),
@@ -95,11 +95,12 @@ class AndroidPdfiumEngine(
         pageIndex: Int,
         options: PdfRenderOptions,
     ): ImageBitmap = mutex.withLock {
+        withContext(Dispatchers.IO) {
         val pdf = requireNotNull(document) { "No PDF document is open." }
         require(pageIndex in 0 until pdf.getPageCount()) { "Page index is out of range." }
         val bitmap = Bitmap.createBitmap(options.width, options.height, Bitmap.Config.ARGB_8888)
         bitmap.eraseColor(android.graphics.Color.WHITE)
-        pdf.openPage(pageIndex).use { page ->
+        requireNotNull(pdf.openPage(pageIndex)) { "Unable to open PDF page $pageIndex." }.use { page ->
             page.renderPageBitmap(
                 bitmap = bitmap,
                 startX = 0,
@@ -110,6 +111,7 @@ class AndroidPdfiumEngine(
             )
         }
         bitmap.asImageBitmap()
+        }
     }
 
     override suspend fun extractText(pageIndex: Int): PdfPageText = mutex.withLock {
