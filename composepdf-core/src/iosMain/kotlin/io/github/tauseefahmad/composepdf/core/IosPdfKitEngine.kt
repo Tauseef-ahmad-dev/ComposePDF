@@ -24,6 +24,7 @@ import platform.CoreGraphics.CGSizeMake
  * File paths, file URLs, and in-memory bytes are supported. Network downloads are
  * intentionally left to the application so authentication and caching stay explicit.
  */
+@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
 class IosPdfKitEngine : PdfRenderEngine {
     private val mutex = Mutex()
     private var document: PDFDocument? = null
@@ -46,13 +47,13 @@ class IosPdfKitEngine : PdfRenderEngine {
                 document = null
                 val resolvedSource = source.downloadIfRemote()
                 val opened = when (resolvedSource) {
-                    is PdfSource.File -> PDFDocument(url = NSURL.fileURLWithPath(resolvedSource.path))
+                    is PdfSource.File -> PDFDocument(NSURL.fileURLWithPath(resolvedSource.path))
                     is PdfSource.Uri -> {
                         val url = NSURL.URLWithString(resolvedSource.value)
                             ?: throw IllegalArgumentException("Invalid PDF URL: ${resolvedSource.value}")
-                        PDFDocument(url = url)
+                        PDFDocument(url)
                     }
-                    is PdfSource.Bytes -> PDFDocument(data = resolvedSource.data.toNSData())
+                    is PdfSource.Bytes -> PDFDocument(resolvedSource.data.toNSData())
                     is PdfSource.Url -> throw UnsupportedOperationException(
                         "Pass downloaded bytes or a local file URL to PDFKit. Network loading is application-managed.",
                     )
@@ -72,8 +73,8 @@ class IosPdfKitEngine : PdfRenderEngine {
             withContext(Dispatchers.Default) {
                 val pdf = requireNotNull(document) { "No PDF document is open." }
                 require(pageIndex in 0 until pdf.pageCount.toInt()) { "Page index is out of range." }
-                val page = requireNotNull(pdf.pageAtIndex(pageIndex.toLong()))
-                val bounds = page.boundsForBox(PDFDisplayBox.kPDFDisplayBoxMediaBox)
+                val page = requireNotNull(pdf.pageAtIndex(pageIndex.toULong()))
+                val bounds = page.boundsForBox(PDFDisplayBox(rawValue = 0u))
                 PdfPageMetadata(
                     pageIndex = pageIndex,
                     width = bounds.size.width.toFloat(),
@@ -123,7 +124,8 @@ class IosPdfKitEngine : PdfRenderEngine {
     private fun NSData.toByteArray(): ByteArray {
         val count = length.toInt()
         if (count == 0) return byteArrayOf()
-        return bytes!!.reinterpret<ByteVar>().readBytes(count)
+        val source = bytes!!.reinterpret<ByteVar>()
+        return ByteArray(count) { index -> source[index].toByte() }
     }
 }
 
