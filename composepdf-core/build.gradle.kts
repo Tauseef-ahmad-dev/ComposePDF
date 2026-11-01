@@ -29,10 +29,19 @@ kotlin {
         commonMain.dependencies {
             api(compose.ui)
             implementation(libs.kotlinx.coroutines.core)
+            implementation("io.ktor:ktor-client-core:3.2.3")
+        }
+
+        androidMain.dependencies {
             implementation("io.ktor:ktor-client-cio:3.2.3")
         }
 
+        iosMain.dependencies {
+            implementation("io.ktor:ktor-client-darwin:3.2.3")
+        }
+
         jvmMain.dependencies {
+            implementation("io.ktor:ktor-client-cio:3.2.3")
             implementation("org.apache.pdfbox:pdfbox:3.0.5")
         }
     }
