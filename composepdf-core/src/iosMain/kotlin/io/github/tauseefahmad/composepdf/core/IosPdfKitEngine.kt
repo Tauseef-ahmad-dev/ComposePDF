@@ -44,7 +44,8 @@ class IosPdfKitEngine : PdfRenderEngine {
         mutex.withLock {
             withContext(Dispatchers.Default) {
                 document = null
-                val opened = when (source) {
+                val resolvedSource = source.downloadIfRemote()
+                val opened = when (resolvedSource) {
                     is PdfSource.File -> PDFDocument(url = NSURL.fileURLWithPath(source.path))
                     is PdfSource.Uri -> {
                         val url = NSURL.URLWithString(source.value)
