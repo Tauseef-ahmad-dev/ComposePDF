@@ -28,6 +28,10 @@ kotlin {
             api(compose.ui)
             implementation(libs.kotlinx.coroutines.core)
         }
+
+        jvmMain.dependencies {
+            implementation("org.apache.pdfbox:pdfbox:3.0.5")
+        }
     }
 }
 
