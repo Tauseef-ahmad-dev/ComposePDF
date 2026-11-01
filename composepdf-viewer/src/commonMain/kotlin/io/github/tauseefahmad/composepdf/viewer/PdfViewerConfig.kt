@@ -18,4 +18,3 @@ data class PdfViewerConfig(
         require(maxCachedPages >= 1) { "maxCachedPages must be at least 1." }
     }
 }
-)
