@@ -15,7 +15,7 @@ kotlin {
             api(projects.composepdfCore)
         }
         androidMain.dependencies {
-            implementation("io.legere:pdfiumandroid:2.0.3")
+            implementation("io.legere:pdfiumandroid:1.0.35")
             implementation(libs.kotlinx.coroutines.core)
         }
     }
