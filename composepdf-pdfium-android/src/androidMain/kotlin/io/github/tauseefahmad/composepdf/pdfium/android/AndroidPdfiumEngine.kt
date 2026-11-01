@@ -14,7 +14,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.net.URL
 
 /**
  * Android PDFium backend.
@@ -48,7 +47,8 @@ class AndroidPdfiumEngine(
             withContext(Dispatchers.IO) {
                 closeDocument()
                 try {
-                    val bytes = when (source) {
+                    val resolvedSource = source.downloadIfRemote()
+                    val bytes = when (resolvedSource) {
                         is PdfSource.File -> File(source.path).readBytes()
                         is PdfSource.Bytes -> source.data
                         is PdfSource.Uri -> {
