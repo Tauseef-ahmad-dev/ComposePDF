@@ -10,6 +10,7 @@ import io.github.tauseefahmad.composepdf.core.PdfEngineFactory
 import io.github.tauseefahmad.composepdf.core.PdfError
 import io.github.tauseefahmad.composepdf.core.PdfRenderOptions
 import io.github.tauseefahmad.composepdf.core.PdfSource
+import io.github.tauseefahmad.composepdf.core.PdfRenderEngine
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 
@@ -34,7 +35,7 @@ class PdfViewerState internal constructor(
     private val cacheOrder = mutableStateListOf<Int>()
     private val renderMutex = Mutex()
     private val maxCachedPages = 12
-    private var engine = engineFactory.create()
+    private var engine: PdfRenderEngine? = null
 
     internal fun pageImage(pageIndex: Int): ImageBitmap? = renderedPages[pageIndex]
 
@@ -90,9 +91,10 @@ class PdfViewerState internal constructor(
                 return it
             }
 
-            val metadata = engine.getPageMetadata(pageIndex)
+            val activeEngine = requireNotNull(engine) { "No PDF document is open." }
+            val metadata = activeEngine.getPageMetadata(pageIndex)
             val targetHeight = (targetWidth * metadata.height / metadata.width).toInt().coerceAtLeast(1)
-            val bitmap = engine.renderPage(
+            val bitmap = activeEngine.renderPage(
                 pageIndex = pageIndex,
                 options = PdfRenderOptions(width = targetWidth, height = targetHeight),
             )
@@ -129,6 +131,8 @@ class PdfViewerState internal constructor(
     }
 
     private suspend fun closeEngine() {
-        runCatching { engine.close() }
+        val activeEngine = engine
+        engine = null
+        if (activeEngine != null) runCatching { activeEngine.close() }
     }
 }
