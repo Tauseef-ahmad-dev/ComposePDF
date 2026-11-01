@@ -57,22 +57,22 @@ class AndroidPdfRendererEngine(
 
                 val fileDescriptor = when (resolvedSource) {
                     is PdfSource.File -> ParcelFileDescriptor.open(
-                        File(source.path),
+                        File(resolvedSource.path),
                         ParcelFileDescriptor.MODE_READ_ONLY,
                     )
 
                     is PdfSource.Bytes -> {
                         val file = File.createTempFile("composepdf-", ".pdf", appContext.cacheDir)
                         temporaryFile = file
-                        FileOutputStream(file).use { it.write(source.data) }
+                        FileOutputStream(file).use { it.write(resolvedSource.data) }
                         ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
                     }
 
                     is PdfSource.Uri -> {
                         val file = File.createTempFile("composepdf-uri-", ".pdf", appContext.cacheDir)
                         temporaryFile = file
-                        val input = appContext.contentResolver.openInputStream(Uri.parse(source.value))
-                            ?: throw IllegalArgumentException("Unable to open PDF URI: ${source.value}")
+                        val input = appContext.contentResolver.openInputStream(Uri.parse(resolvedSource.value))
+                            ?: throw IllegalArgumentException("Unable to open PDF URI: ${resolvedSource.value}")
                         input.use { sourceStream ->
                             FileOutputStream(file).use { targetStream ->
                                 sourceStream.copyTo(targetStream)
