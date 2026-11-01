@@ -86,11 +86,7 @@ android {
 mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
-    coordinates(
-        groupId = project.group.toString(),
-        artifactId = project.name,
-        version = project.version.toString(),
-    )
+    coordinates(project.group.toString(), project.name, project.version.toString())
     pom {
         name.set("ComposePDF")
         description.set("Compose Multiplatform PDF rendering and viewer library")
