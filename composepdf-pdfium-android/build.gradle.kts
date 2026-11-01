@@ -12,7 +12,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            api(projects.composepdfCore)
+            api(project(":composepdf-core"))
         }
         androidMain.dependencies {
             implementation("io.legere:pdfiumandroid:1.0.35")
