@@ -1,7 +1,7 @@
 package io.github.tauseefahmad.composepdf.core
 
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.graphics.decodeToImageBitmap
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
 import kotlinx.cinterop.ByteVar
@@ -10,7 +10,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import org.jetbrains.skia.Image
 import platform.Foundation.NSData
 import platform.Foundation.NSURL
 import platform.PDFKit.PDFDisplayBox
@@ -96,7 +95,7 @@ class IosPdfKitEngine : PdfRenderEngine {
             )
             val png = UIImagePNGRepresentation(thumbnail)
                 ?: throw IllegalStateException("PDFKit failed to encode the rendered page.")
-            Image.makeFromEncoded(png.toByteArray()).toComposeImageBitmap()
+            png.toByteArray().decodeToImageBitmap()
         }
     }
 
