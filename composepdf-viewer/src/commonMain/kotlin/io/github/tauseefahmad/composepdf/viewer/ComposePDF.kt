@@ -2,6 +2,8 @@ package io.github.tauseefahmad.composepdf.viewer
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -24,10 +26,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.platform.LocalDensity
 import io.github.tauseefahmad.composepdf.core.PdfEngineFactory
 import io.github.tauseefahmad.composepdf.core.PdfError
 import io.github.tauseefahmad.composepdf.core.PdfSource
@@ -40,8 +47,8 @@ import kotlinx.coroutines.withContext
 /**
  * Displays a PDF document using a caller-provided rendering engine.
  *
- * This initial viewer iteration supports vertically scrolling pages. Zoom, search,
- * thumbnails, annotations, and bundled platform engines are separate roadmap items.
+ * Gestures and zoom state use common Compose APIs, avoiding platform-specific UI.
+ * Pass [zoomState] to expose controls elsewhere in the host application.
  */
 @Composable
 fun ComposePDF(
@@ -50,6 +57,7 @@ fun ComposePDF(
     modifier: Modifier = Modifier,
     state: PdfViewerState = rememberPdfViewerState(engineFactory),
     config: PdfViewerConfig = PdfViewerConfig(),
+    zoomState: PdfZoomState = rememberPdfZoomState(),
     onEvent: (PdfViewerEvent) -> Unit = {},
 ) {
     val listState = rememberLazyListState()
@@ -117,7 +125,17 @@ fun ComposePDF(
                 } else {
                     LazyColumn(
                         state = listState,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clipToBounds()
+                            .pointerInput(zoomState) {
+                                detectTransformGestures { _, pan, zoom, _ ->
+                                    zoomState.transform(zoom, pan)
+                                }
+                            }
+                            .pointerInput(zoomState) {
+                                detectTapGestures(onDoubleTap = { zoomState.toggleDoubleTapZoom() })
+                            },
                         contentPadding = PaddingValues(
                             horizontal = config.pageHorizontalPadding,
                             vertical = config.pageSpacing,
@@ -129,6 +147,7 @@ fun ComposePDF(
                                 pageIndex = pageIndex,
                                 state = state,
                                 config = config,
+                                zoomState = zoomState,
                             )
                         }
                     }
@@ -143,15 +162,39 @@ private fun PdfPage(
     pageIndex: Int,
     state: PdfViewerState,
     config: PdfViewerConfig,
+    zoomState: PdfZoomState,
 ) {
     val renderFailed = remember(pageIndex, state) { mutableStateOf(false) }
 
+    val density = LocalDensity.current.density
     BoxWithConstraints(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center,
     ) {
-        val targetWidth = constraints.maxWidth.coerceAtLeast(1)
+        val viewportWidth = constraints.maxWidth.coerceAtLeast(1)
+        val viewportHeight = constraints.maxHeight.takeUnless { it == Constraints.Infinity }
         val pageImage = state.pageImage(pageIndex)
+        val pageMetadata = remember(pageIndex, state) { mutableStateOf<io.github.tauseefahmad.composepdf.core.PdfPageMetadata?>(null) }
+
+        LaunchedEffect(pageIndex, state) {
+            pageMetadata.value = runCatching { state.pageMetadata(pageIndex) }.getOrNull()
+        }
+
+        val fitScale = when (zoomState.fitMode.value) {
+            PdfFitMode.FitWidth -> 1f
+            PdfFitMode.FitPage -> {
+                val metadata = pageMetadata.value
+                if (metadata == null || viewportHeight == null) 1f else {
+                    minOf(1f, minOf(viewportWidth / metadata.width / density, viewportHeight / metadata.height / density))
+                }
+            }
+            PdfFitMode.ActualSize -> {
+                1f
+            }
+        }
+        val userScale = zoomState.scale.value
+        val scale = fitScale * userScale
+        val targetWidth = (viewportWidth * userScale).toInt().coerceAtLeast(1)
 
         LaunchedEffect(pageIndex, targetWidth, state) {
             if (pageImage == null) {
@@ -169,7 +212,13 @@ private fun PdfPage(
                 modifier = Modifier
                     .fillMaxWidth()
                     .then(if (config.showPageShadow) Modifier.shadow(2.dp) else Modifier)
-                    .background(config.pageBackground),
+                    .background(config.pageBackground)
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        translationX = zoomState.pan.value.x
+                        translationY = zoomState.pan.value.y
+                    },
                 contentScale = ContentScale.FillWidth,
             )
 
