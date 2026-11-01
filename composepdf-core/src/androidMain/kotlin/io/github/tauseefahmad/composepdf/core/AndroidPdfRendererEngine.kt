@@ -17,8 +17,8 @@ import java.io.FileOutputStream
 /**
  * Android implementation backed by the platform PdfRenderer API.
  *
- * Supports local files, content URIs, and in-memory byte arrays. Remote URLs and
- * password-protected documents require a different backend or a future adapter.
+ * Supports local files, content URIs, in-memory byte arrays, and remote URLs via
+ * the shared downloader. Password-protected documents are not supported.
  */
 class AndroidPdfRendererEngine(
     context: Context,
@@ -82,7 +82,7 @@ class AndroidPdfRendererEngine(
                     }
 
                     is PdfSource.Url -> throw UnsupportedOperationException(
-                        "URL loading is not included in the Android PdfRenderer backend yet.",
+                        "Remote URL was not resolved to a local source before reaching Android PdfRenderer.",
                     )
                 }
 
