@@ -1,94 +1,148 @@
-# Local Maven publishing and integration
+# Publishing and consumer integration
 
-ComposePDF currently publishes snapshots to the local Maven repository for consumer-app validation. This is not a public Maven Central release.
+ComposePDF currently publishes Android preview artifacts to Maven Local. This is not a public Maven Central release.
 
-## 1. Publish Android artifacts
+## 1. Publish Android preview artifacts
 
-From the ComposePDF repository root, using a JDK 17-compatible environment:
+Use JDK 17 and run from the repository root:
 
 ```bash
 ./gradlew publishAndroidToMavenLocal
 ```
 
-This publishes Android release artifacts for core, viewer, and optional PDFium. It intentionally skips the Kotlin Multiplatform metadata publication because generating that metadata compiles all configured platform source sets, including iOS. The Android publication uses the documented base artifact coordinates.
+The task publishes the Android release variants for core, viewer, and optional PDFium. It intentionally skips KMP metadata publication, because that task can compile all configured platform source sets. The task does not validate iOS or Desktop.
 
-The aggregate `publishToMavenLocal` task publishes every configured target and may fail if an unrelated platform backend does not compile. Use it only when validating all configured targets.
+The Android publication artifact IDs include the Android target suffix. Expected local coordinates:
 
-Artifacts are installed in the local Maven repository (normally `~/.m2/repository`). The initial version is `0.1.0-SNAPSHOT`. Republish after changing library code and before rebuilding the consuming app.
+| Module | Maven coordinate |
+|---|---|
+| Core | `io.github.tauseefahmad:composepdf-core-android:0.1.0-SNAPSHOT` |
+| Viewer | `io.github.tauseefahmad:composepdf-viewer-android:0.1.0-SNAPSHOT` |
+| Android PDFium | `io.github.tauseefahmad:composepdf-pdfium-android-android:0.1.0-SNAPSHOT` |
 
-## 2. Add Maven Local to your Android app
+Artifacts are installed in `~/.m2/repository`. Republish after changing library code. If Gradle keeps an older artifact cached, stop Gradle and refresh dependencies in the consumer app.
 
-In the consuming app's `settings.gradle.kts`:
+## 2. Configure Maven Local in the consumer
+
+In the consumer's `settings.gradle.kts`:
 
 ```kotlin
 dependencyResolutionManagement {
     repositories {
         google()
-        mavenCentral()
         mavenLocal()
+        mavenCentral()
     }
 }
 ```
 
-Keep `mavenLocal()` for local integration only. Remove it when switching to a remotely published release.
+Keep `mavenLocal()` for local integration only. Remove it when consuming a remotely published release.
 
-## 3. Add the viewer dependency
+## 3. Add the viewer
 
-In the app module's `build.gradle.kts`:
-
-```kotlin
-dependencies {
-    implementation("io.github.tauseefahmad:composepdf-viewer:0.1.0-SNAPSHOT")
-}
-```
-
-The viewer exposes core types through its API dependency, so a separate core dependency is not normally needed.
-
-For optional PDFium:
+In the Android app module:
 
 ```kotlin
 dependencies {
-    implementation("io.github.tauseefahmad:composepdf-pdfium-android:0.1.0-SNAPSHOT")
+    implementation("io.github.tauseefahmad:composepdf-viewer-android:0.1.0-SNAPSHOT")
 }
 ```
 
-## 4. Render a PDF from a content URI
+The viewer exposes core types transitively. For the optional PDFium engine:
 
 ```kotlin
-@Composable
-fun PdfDocumentScreen(pdfUri: Uri) {
-    val context = LocalContext.current
-    val engineFactory = remember(context) { androidPdfEngineFactory(context) }
-    val state = rememberPdfViewerState(engineFactory)
-
-    ComposePDF(
-        source = PdfSource.Uri(pdfUri.toString()),
-        engineFactory = engineFactory,
-        state = state,
-        modifier = Modifier.fillMaxSize(),
-    )
+dependencies {
+    implementation("io.github.tauseefahmad:composepdf-pdfium-android-android:0.1.0-SNAPSHOT")
 }
 ```
 
-Make sure the app has permission to read the URI. For documents selected with the Storage Access Framework, retain URI permission when the document must remain accessible after process restarts.
+## 4. Network permission for URL sources
 
-## 5. Validate the consumer
+When using `PdfSource.Url`, declare this in the consuming Android app's manifest, outside the `<application>` element:
 
-1. Sync Gradle in the consuming app.
-2. Build and run on an Android device or emulator.
-3. Open a real PDF using a content URI.
-4. Verify page rendering, scrolling, zoom, page navigation, and thumbnail selection.
-5. Try text search only with an engine whose `textExtraction` capability is true.
-6. Report dependency resolution, runtime, or rendering issues with the Android version and PDF characteristics.
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
+```
 
-## Coordinates
+Example:
 
-| Module | Maven coordinate |
-|---|---|
-| Core | `io.github.tauseefahmad:composepdf-core:0.1.0-SNAPSHOT` |
-| Viewer | `io.github.tauseefahmad:composepdf-viewer:0.1.0-SNAPSHOT` |
-| Android PDFium | `io.github.tauseefahmad:composepdf-pdfium-android:0.1.0-SNAPSHOT` |
+```kotlin
+val source = PdfSource.Url(
+    url = "https://example.com/document.pdf",
+    headers = mapOf("Authorization" to "Bearer <token>"),
+)
+```
 
-## Public release
+The current shared URL loader downloads the response into memory before the platform engine opens it. This can be expensive for large files. Disk-backed streaming, remote-document cache policy, download progress, and cancellation controls are still planned follow-up work.
 
-Maven Central is a separate release step. It requires a verified namespace, Sonatype Central Portal credentials, signing configuration, and a non-snapshot release version. Keep credentials outside source control. Do not publish this preview publicly until consumer integration and supported target builds have been validated.
+## 5. Consumer validation checklist
+
+Before relying on a version in an application, verify:
+
+1. Gradle resolves the expected artifact and version.
+2. The app compiles with its Kotlin, AGP, Gradle, and Compose versions.
+3. A local file and a platform URI open successfully.
+4. A public URL opens with network permission enabled.
+5. An authenticated URL forwards its request headers.
+6. Redirects and non-success HTTP responses produce understandable outcomes.
+7. Cancellation and repeated open/close do not leak resources.
+8. Rendering, scrolling, zoom, navigation, search, and thumbnails behave as expected for the selected engine.
+9. Test representative small, large, scanned, and password-protected PDFs against the engine capability matrix.
+
+## 6. Toolchain and compatibility
+
+The viewer's rendered bitmap cache can be tuned per viewer:
+
+\`\`\`kotlin
+val config = PdfViewerConfig(maxCachedPages = 6)
+ComposePDF(
+    source = source,
+    engineFactory = engineFactory,
+    state = state,
+    config = config,
+)
+\`\`\`
+
+Lower values reduce retained bitmap memory at the cost of more page re-rendering when users scroll back. The default is 12 pages.
+
+The current project build uses:
+
+- Kotlin 2.2.20
+- Compose Multiplatform 1.9.3
+- Android Gradle Plugin 8.13.2
+- Gradle wrapper 8.14.3
+- JDK 17
+- Android compileSdk 36 / minSdk 24
+
+These are the project's current build versions, not a guarantee of compatibility with every consumer toolchain. Keep a tested compatibility matrix in release notes as additional consumer configurations are validated.
+
+## 7. Public Maven Central release checklist
+
+Maven Central publication is not configured as a completed release workflow yet. Before publishing a stable version:
+
+- Verify the `io.github.tauseefahmad` namespace in Sonatype Central Portal.
+- Configure the Central Portal publishing/deployment plugin and repository credentials using environment variables or Gradle user properties; never commit credentials.
+- Configure in-memory or file-backed signing with a valid GPG key and publish signatures for every publication.
+- Set a non-snapshot version through `VERSION_NAME`.
+- Validate POM metadata, source/Javadoc artifacts as required by the Central Portal, licenses, and SCM links.
+- Validate Android, iOS, and Desktop artifacts from clean consumer projects.
+- Publish a release candidate to a staging workflow, verify the resolved artifacts, then publish the stable release.
+- Create a Git tag and GitHub release with supported toolchain versions, platform limitations, and migration notes.
+
+### Configure credentials locally
+
+Create a Central Portal user token and configure it in `~/.gradle/gradle.properties` (never in this repository):
+
+```properties
+mavenCentralUsername=YOUR_CENTRAL_PORTAL_TOKEN_USERNAME
+mavenCentralPassword=YOUR_CENTRAL_PORTAL_TOKEN_PASSWORD
+signing.keyId=YOUR_GPG_KEY_ID
+signing.password=YOUR_GPG_KEY_PASSWORD
+signing.secretKeyRingFile=/absolute/path/to/secring.gpg
+```
+
+Alternatively, use the plugin's supported environment variables and in-memory signing key properties. See the [plugin's credential documentation](https://vanniktech.github.io/gradle-maven-publish-plugin/central/#secrets).
+
+After namespace verification, credentials, and a distributed public GPG key are ready, set a release version (for example with `VERSION_NAME=0.1.0`) and run `./gradlew publishToMavenCentral`. The plugin uploads a deployment for validation; manually publish it in the Central Portal unless automatic release is explicitly configured. Do not run this task until the Sonatype namespace and credentials are confirmed.
+
+Do not treat `publishAndroidToMavenLocal` as a Maven Central publishing task. Do not publish a public stable release until all platform artifacts and clean consumer projects have been validated.

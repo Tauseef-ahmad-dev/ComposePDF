@@ -11,4 +11,10 @@ data class PdfViewerConfig(
     val pageBackground: Color = Color.White,
     val viewerBackground: Color = Color(0xFF202124),
     val showPageShadow: Boolean = true,
-)
+    /** Maximum number of rendered page bitmaps retained in memory. */
+    val maxCachedPages: Int = 12,
+) {
+    init {
+        require(maxCachedPages >= 1) { "maxCachedPages must be at least 1." }
+    }
+}
