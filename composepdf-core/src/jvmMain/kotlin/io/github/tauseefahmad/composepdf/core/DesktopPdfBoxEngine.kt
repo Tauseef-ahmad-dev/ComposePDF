@@ -42,13 +42,13 @@ class DesktopPdfBoxEngine : PdfRenderEngine {
                 closeDocument()
                 val resolvedSource = source.downloadIfRemote()
                 val opened = when (resolvedSource) {
-                    is PdfSource.File -> if (password == null) Loader.loadPDF(File(source.path))
-                        else Loader.loadPDF(File(source.path), password)
-                    is PdfSource.Bytes -> if (password == null) Loader.loadPDF(source.data)
-                        else Loader.loadPDF(source.data, password)
+                    is PdfSource.File -> if (password == null) Loader.loadPDF(File(resolvedSource.path))
+                        else Loader.loadPDF(File(resolvedSource.path), password)
+                    is PdfSource.Bytes -> if (password == null) Loader.loadPDF(resolvedSource.data)
+                        else Loader.loadPDF(resolvedSource.data, password)
                     is PdfSource.Url -> {
-                        val connection = URL(source.url).openConnection().apply {
-                            source.headers.forEach { (key, value) -> setRequestProperty(key, value) }
+                        val connection = URL(resolvedSource.url).openConnection().apply {
+                            resolvedSource.headers.forEach { (key, value) -> setRequestProperty(key, value) }
                             connectTimeout = 15_000
                             readTimeout = 30_000
                         }
@@ -56,7 +56,7 @@ class DesktopPdfBoxEngine : PdfRenderEngine {
                         if (password == null) Loader.loadPDF(bytes) else Loader.loadPDF(bytes, password)
                     }
                     is PdfSource.Uri -> {
-                        val uriFile = File(source.value.removePrefix("file://"))
+                        val uriFile = File(resolvedSource.value.removePrefix("file://"))
                         if (password == null) Loader.loadPDF(uriFile) else Loader.loadPDF(uriFile, password)
                     }
                 }
