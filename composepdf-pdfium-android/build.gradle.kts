@@ -1,4 +1,5 @@
 plugins {
+    signing
     `maven-publish`
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.library)
@@ -61,5 +62,21 @@ android {
 
     defaultConfig {
         minSdk = 24
+    }
+}
+
+/*
+ * Release signing is opt-in. Supply SIGNING_KEY and SIGNING_PASSWORD as
+ * environment variables (or signingInMemoryKey/signingInMemoryKeyPassword
+ * Gradle properties). No signing material belongs in source control.
+ */
+signing {
+    val signingKey = providers.gradleProperty("signingInMemoryKey").orNull
+        ?: System.getenv("SIGNING_KEY")
+    val signingPassword = providers.gradleProperty("signingInMemoryKeyPassword").orNull
+        ?: System.getenv("SIGNING_PASSWORD")
+    if (!signingKey.isNullOrBlank()) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign(publishing.publications)
     }
 }
