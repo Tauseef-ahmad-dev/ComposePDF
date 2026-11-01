@@ -39,26 +39,31 @@ class PdfViewerState internal constructor(
     internal fun pageImage(pageIndex: Int): ImageBitmap? = renderedPages[pageIndex]
 
     suspend fun open(source: PdfSource) {
-        closeEngine()
-        clearPageCache()
-        _documentInfo.value = null
-        _currentPage.value = 0
-        _error.value = null
-        _loadingState.value = PdfLoadingState.Loading
-
-        val newEngine = engineFactory.create()
-        engine = newEngine
+        renderMutex.lock()
         try {
-            _documentInfo.value = newEngine.open(source)
-            _loadingState.value = PdfLoadingState.Loaded
-        } catch (cancellation: CancellationException) {
             closeEngine()
-            _loadingState.value = PdfLoadingState.Idle
-            throw cancellation
-        } catch (throwable: Throwable) {
-            _error.value = PdfError.Unknown(throwable.message)
-            _loadingState.value = PdfLoadingState.Failed
-            closeEngine()
+            clearPageCache()
+            _documentInfo.value = null
+            _currentPage.value = 0
+            _error.value = null
+            _loadingState.value = PdfLoadingState.Loading
+
+            val newEngine = engineFactory.create()
+            engine = newEngine
+            try {
+                _documentInfo.value = newEngine.open(source)
+                _loadingState.value = PdfLoadingState.Loaded
+            } catch (cancellation: CancellationException) {
+                closeEngine()
+                _loadingState.value = PdfLoadingState.Idle
+                throw cancellation
+            } catch (throwable: Throwable) {
+                _error.value = PdfError.Unknown(throwable.message)
+                _loadingState.value = PdfLoadingState.Failed
+                closeEngine()
+            }
+        } finally {
+            renderMutex.unlock()
         }
     }
 
@@ -106,11 +111,16 @@ class PdfViewerState internal constructor(
     }
 
     suspend fun close() {
-        closeEngine()
-        clearPageCache()
-        _documentInfo.value = null
-        _currentPage.value = 0
-        _loadingState.value = PdfLoadingState.Idle
+        renderMutex.lock()
+        try {
+            closeEngine()
+            clearPageCache()
+            _documentInfo.value = null
+            _currentPage.value = 0
+            _loadingState.value = PdfLoadingState.Idle
+        } finally {
+            renderMutex.unlock()
+        }
     }
 
     private fun clearPageCache() {
