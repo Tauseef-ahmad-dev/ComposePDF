@@ -14,10 +14,11 @@ internal suspend fun PdfSource.downloadIfRemote(): PdfSource = when (this) {
         require(url.startsWith("https://", ignoreCase = true) || url.startsWith("http://", ignoreCase = true)) {
             "PDF URL must use HTTP or HTTPS."
         }
+        val requestHeaders = headers
         val client = HttpClient(CIO)
         try {
             val response = client.get(url) {
-                headers { this@downloadIfRemote.headers.forEach { (name, value) -> append(name, value) } }
+                headers { requestHeaders.forEach { (name, value) -> append(name, value) } }
             }
             if (!response.status.isSuccess()) {
                 throw PdfDownloadException(response.status.value, "PDF download failed with HTTP ${response.status.value}.")
