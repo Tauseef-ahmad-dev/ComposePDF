@@ -9,6 +9,8 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
 import java.io.FileOutputStream
 
@@ -25,6 +27,7 @@ class AndroidPdfRendererEngine(
     private var descriptor: ParcelFileDescriptor? = null
     private var renderer: PdfRenderer? = null
     private var temporaryFile: File? = null
+    private val mutex = Mutex()
 
     override val name: String = "Android PdfRenderer"
     override val capabilities = PdfEngineCapabilities(
@@ -41,7 +44,8 @@ class AndroidPdfRendererEngine(
     override suspend fun open(
         source: PdfSource,
         password: String?,
-    ): PdfDocumentInfo = withContext(Dispatchers.IO) {
+    ): PdfDocumentInfo = mutex.withLock {
+        withContext(Dispatchers.IO) {
         closeResources()
         require(password == null) {
             "The Android PdfRenderer backend does not support password-protected PDFs."
@@ -86,9 +90,10 @@ class AndroidPdfRendererEngine(
             closeResources()
             throw throwable
         }
+        }
     }
 
-    override suspend fun getPageMetadata(pageIndex: Int): PdfPageMetadata =
+    override suspend fun getPageMetadata(pageIndex: Int): PdfPageMetadata = mutex.withLock {
         withContext(Dispatchers.IO) {
             val pdfRenderer = requireNotNull(renderer) { "No PDF document is open." }
             require(pageIndex in 0 until pdfRenderer.pageCount) { "Page index is out of range." }
@@ -100,11 +105,13 @@ class AndroidPdfRendererEngine(
                 )
             }
         }
+    }
 
     override suspend fun renderPage(
         pageIndex: Int,
         options: PdfRenderOptions,
-    ): ImageBitmap = withContext(Dispatchers.IO) {
+    ): ImageBitmap = mutex.withLock {
+        withContext(Dispatchers.IO) {
         val pdfRenderer = requireNotNull(renderer) { "No PDF document is open." }
         require(pageIndex in 0 until pdfRenderer.pageCount) { "Page index is out of range." }
 
@@ -123,9 +130,10 @@ class AndroidPdfRendererEngine(
             )
             bitmap.asImageBitmap()
         }
+        }
     }
 
-    override suspend fun close() {
+    override suspend fun close() = mutex.withLock {
         withContext(Dispatchers.IO) {
             closeResources()
         }
