@@ -11,19 +11,17 @@ allprojects {
 }
 
 /**
- * Publishes only the metadata and Android release variants.
- * The aggregate publishToMavenLocal task also builds every configured target.
+ * Publishes only Android release variants. Do not publish the KMP metadata
+ * publication here: generating it compiles all platform source sets,
+ * including iOS, which is outside this Android consumer-validation step.
  */
 tasks.register("publishAndroidToMavenLocal") {
     group = "publishing"
-    description = "Publishes ComposePDF metadata and Android release artifacts to Maven Local."
+    description = "Publishes ComposePDF Android release artifacts to Maven Local."
 
     dependsOn(
-        ":composepdf-core:publishKotlinMultiplatformPublicationToMavenLocal",
         ":composepdf-core:publishAndroidReleasePublicationToMavenLocal",
-        ":composepdf-viewer:publishKotlinMultiplatformPublicationToMavenLocal",
         ":composepdf-viewer:publishAndroidReleasePublicationToMavenLocal",
-        ":composepdf-pdfium-android:publishKotlinMultiplatformPublicationToMavenLocal",
         ":composepdf-pdfium-android:publishAndroidReleasePublicationToMavenLocal",
     )
 }
