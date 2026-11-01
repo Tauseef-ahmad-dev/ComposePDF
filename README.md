@@ -29,7 +29,7 @@ For Android consumer-app integration, run from the repository root:
 ./gradlew publishAndroidToMavenLocal
 ```
 
-This publishes Android release variants and multiplatform metadata without building iOS or Desktop targets. Use `./gradlew publishToMavenLocal` only when validating all configured targets.
+This publishes Android release artifacts only. It does not publish KMP metadata or compile iOS/Desktop targets. Use `./gradlew publishToMavenLocal` only when validating all configured targets.
 
 The initial coordinates are:
 

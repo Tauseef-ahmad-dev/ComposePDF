@@ -38,6 +38,10 @@ kotlin {
 }
 
 publishing {
+    publications.withType<MavenPublication>().matching { it.name == "androidRelease" }.configureEach {
+        artifactId = project.name
+    }
+
     publications.withType<MavenPublication>().configureEach {
         pom {
             name.set("ComposePDF")
