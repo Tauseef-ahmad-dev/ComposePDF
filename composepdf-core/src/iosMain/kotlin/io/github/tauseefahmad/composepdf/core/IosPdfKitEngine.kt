@@ -46,10 +46,10 @@ class IosPdfKitEngine : PdfRenderEngine {
                 document = null
                 val resolvedSource = source.downloadIfRemote()
                 val opened = when (resolvedSource) {
-                    is PdfSource.File -> PDFDocument(url = NSURL.fileURLWithPath(source.path))
+                    is PdfSource.File -> PDFDocument(url = NSURL.fileURLWithPath(resolvedSource.path))
                     is PdfSource.Uri -> {
-                        val url = NSURL.URLWithString(source.value)
-                            ?: throw IllegalArgumentException("Invalid PDF URL: ${source.value}")
+                        val url = NSURL.URLWithString(resolvedSource.value)
+                            ?: throw IllegalArgumentException("Invalid PDF URL: ${resolvedSource.value}")
                         PDFDocument(url = url)
                     }
                     is PdfSource.Bytes -> PDFDocument(data = source.data.toNSData())
