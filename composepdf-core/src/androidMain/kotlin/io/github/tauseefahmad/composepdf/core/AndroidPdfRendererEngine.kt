@@ -50,11 +50,12 @@ class AndroidPdfRendererEngine(
         withContext(Dispatchers.IO) {
             closeResources()
             try {
+                val resolvedSource = source.downloadIfRemote()
                 require(password == null) {
                     "The Android PdfRenderer backend does not support password-protected PDFs."
                 }
 
-                val fileDescriptor = when (source) {
+                val fileDescriptor = when (resolvedSource) {
                     is PdfSource.File -> ParcelFileDescriptor.open(
                         File(source.path),
                         ParcelFileDescriptor.MODE_READ_ONLY,
