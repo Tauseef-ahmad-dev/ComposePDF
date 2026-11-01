@@ -13,9 +13,10 @@ Use `PdfEngineRegistry` to register native, PDFium, and custom factories. `AUTO`
 Example:
 
 ```kotlin
+// Register only the factories available on the current platform.
 val registry = PdfEngineRegistry(
-    nativeFactory = desktopPdfBoxEngineFactory(),
-    pdfiumFactory = optionalPdfiumFactory,
+    nativeFactory = desktopPdfBoxEngineFactory(), // Desktop
+    customFactory = applicationSpecificFactory,
 )
 val engine = registry.create(PdfEngineType.AUTO)
 ```
