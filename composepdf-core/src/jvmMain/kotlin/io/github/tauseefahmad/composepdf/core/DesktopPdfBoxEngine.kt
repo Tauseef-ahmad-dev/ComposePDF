@@ -94,8 +94,9 @@ class DesktopPdfBoxEngine : PdfRenderEngine {
             val pixels = image.getRGB(0, 0, image.width, image.height, null, 0, image.width)
             bitmap.writePixels(
                 buffer = pixels,
-                bufferWidth = image.width,
-                bufferHeight = image.height,
+                width = image.width,
+                height = image.height,
+                stride = image.width,
             )
             bitmap
         }
