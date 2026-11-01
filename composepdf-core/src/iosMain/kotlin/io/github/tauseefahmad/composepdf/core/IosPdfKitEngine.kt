@@ -6,6 +6,7 @@ import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.reinterpret
+import kotlinx.cinterop.useContents
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -74,11 +75,11 @@ class IosPdfKitEngine : PdfRenderEngine {
                 val pdf = requireNotNull(document) { "No PDF document is open." }
                 require(pageIndex in 0 until pdf.pageCount.toInt()) { "Page index is out of range." }
                 val page = requireNotNull(pdf.pageAtIndex(pageIndex.toULong()))
-                val bounds = page.boundsForBox(PDFDisplayBox(rawValue = 0u))
+                val bounds = page.boundsForBox(0L)
                 PdfPageMetadata(
                     pageIndex = pageIndex,
-                    width = bounds.size.width.toFloat(),
-                    height = bounds.size.height.toFloat(),
+                    width = bounds.useContents { size.width.toFloat() },
+                    height = bounds.useContents { size.height.toFloat() },
                 )
             }
         }
@@ -90,10 +91,10 @@ class IosPdfKitEngine : PdfRenderEngine {
         withContext(Dispatchers.Default) {
             val pdf = requireNotNull(document) { "No PDF document is open." }
             require(pageIndex in 0 until pdf.pageCount.toInt()) { "Page index is out of range." }
-            val page: PDFPage = requireNotNull(pdf.pageAtIndex(pageIndex.toLong()))
+            val page: PDFPage = requireNotNull(pdf.pageAtIndex(pageIndex.toULong()))
             val thumbnail = page.thumbnailOfSize(
                 size = CGSizeMake(options.width.toDouble(), options.height.toDouble()),
-                forBox = PDFDisplayBox.kPDFDisplayBoxMediaBox,
+                forBox = 0L,
             )
             val png = UIImagePNGRepresentation(thumbnail)
                 ?: throw IllegalStateException("PDFKit failed to encode the rendered page.")
@@ -117,7 +118,7 @@ class IosPdfKitEngine : PdfRenderEngine {
     private fun ByteArray.toNSData(): NSData {
         require(isNotEmpty()) { "PDF data cannot be empty." }
         return usePinned { pinned ->
-            NSData.create(bytes = pinned.addressOf(0), length = size.toULong())
+            NSData(bytes = pinned.addressOf(0), length = size.toULong())
         }
     }
 
@@ -125,7 +126,7 @@ class IosPdfKitEngine : PdfRenderEngine {
         val count = length.toInt()
         if (count == 0) return byteArrayOf()
         val source = bytes!!.reinterpret<ByteVar>()
-        return ByteArray(count) { index -> source[index].toByte() }
+        return ByteArray(count) { index -> source.plus(index).pointed.value.toByte() }
     }
 }
 
