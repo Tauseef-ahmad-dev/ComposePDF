@@ -14,6 +14,14 @@ import io.github.tauseefahmad.composepdf.core.PdfRenderEngine
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 
+/** A text occurrence found in a PDF page. Offsets refer to the extracted page text. */
+data class PdfSearchResult(
+    val pageIndex: Int,
+    val startOffset: Int,
+    val endOffset: Int,
+    val matchedText: String,
+)
+
 /** Owns a single viewer document session and its bounded rendered-page cache. */
 class PdfViewerState internal constructor(
     private val engineFactory: PdfEngineFactory,
@@ -30,6 +38,16 @@ class PdfViewerState internal constructor(
 
     private val _error = mutableStateOf<PdfError?>(null)
     val error: State<PdfError?> = _error
+
+    private val _searchResults = mutableStateListOf<PdfSearchResult>()
+    /** Results for the most recent document-wide text search. */
+    val searchResults: List<PdfSearchResult> get() = _searchResults
+
+    private val _activeSearchResultIndex = mutableStateOf(-1)
+    val activeSearchResultIndex: State<Int> = _activeSearchResultIndex
+
+    /** True when the active engine advertises text extraction support. */
+    val supportsTextSearch: Boolean get() = engine?.capabilities?.textExtraction == true
 
     private val renderedPages = mutableStateMapOf<Int, ImageBitmap>()
     private val cacheOrder = mutableStateListOf<Int>()
@@ -48,11 +66,73 @@ class PdfViewerState internal constructor(
         return metadata
     }
 
+    /**
+     * Searches extracted text on every page. Results are ordered by page and text offset.
+     * This operation is available only when the configured engine supports text extraction.
+     */
+    suspend fun search(query: String): List<PdfSearchResult> {
+        val normalizedQuery = query.trim()
+        if (normalizedQuery.isEmpty()) {
+            clearSearch()
+            return emptyList()
+        }
+
+        renderMutex.lock()
+        try {
+            val activeEngine = requireNotNull(engine) { "No PDF document is open." }
+            check(activeEngine.capabilities.textExtraction) {
+                "Text search is not supported by ${activeEngine.name}. Use an engine with text extraction support."
+            }
+            val pageCount = _documentInfo.value?.pageCount ?: 0
+            val matches = mutableListOf<PdfSearchResult>()
+            for (pageIndex in 0 until pageCount) {
+                val text = activeEngine.extractText(pageIndex).text
+                var offset = 0
+                while (offset <= text.length - normalizedQuery.length) {
+                    val foundAt = text.indexOf(normalizedQuery, startIndex = offset, ignoreCase = true)
+                    if (foundAt < 0) break
+                    matches += PdfSearchResult(
+                        pageIndex = pageIndex,
+                        startOffset = foundAt,
+                        endOffset = foundAt + normalizedQuery.length,
+                        matchedText = text.substring(foundAt, foundAt + normalizedQuery.length),
+                    )
+                    offset = foundAt + normalizedQuery.length
+                }
+            }
+            _searchResults.clear()
+            _searchResults.addAll(matches)
+            _activeSearchResultIndex.value = if (matches.isEmpty()) -1 else 0
+            matches.firstOrNull()?.let { _currentPage.value = it.pageIndex }
+            return matches
+        } finally {
+            renderMutex.unlock()
+        }
+    }
+
+    fun clearSearch() {
+        _searchResults.clear()
+        _activeSearchResultIndex.value = -1
+    }
+
+    suspend fun nextSearchResult() = moveSearchResult(1)
+
+    suspend fun previousSearchResult() = moveSearchResult(-1)
+
+    private suspend fun moveSearchResult(direction: Int) {
+        if (_searchResults.isEmpty()) return
+        val nextIndex = (_activeSearchResultIndex.value + direction)
+            .mod(_searchResults.size)
+        _activeSearchResultIndex.value = nextIndex
+        goToPage(_searchResults[nextIndex].pageIndex)
+    }
+
     suspend fun open(source: PdfSource) {
         renderMutex.lock()
         try {
             closeEngine()
             clearPageCache()
+            clearSearch()
             _documentInfo.value = null
             _currentPage.value = 0
             _error.value = null
@@ -126,6 +206,7 @@ class PdfViewerState internal constructor(
         try {
             closeEngine()
             clearPageCache()
+            clearSearch()
             _documentInfo.value = null
             _currentPage.value = 0
             _loadingState.value = PdfLoadingState.Idle
