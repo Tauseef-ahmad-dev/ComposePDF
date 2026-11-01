@@ -3,6 +3,8 @@ package io.github.tauseefahmad.composepdf.core
 import androidx.compose.ui.graphics.ImageBitmap
 import org.apache.pdfbox.Loader
 import org.apache.pdfbox.pdmodel.PDDocument
+import org.apache.pdfbox.pdmodel.interactive.action.PDActionGoTo
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageDestination
 import org.apache.pdfbox.rendering.ImageType
 import org.apache.pdfbox.rendering.PDFRenderer
 import kotlinx.coroutines.Dispatchers
@@ -31,7 +33,7 @@ class DesktopPdfBoxEngine : PdfRenderEngine {
         forms = false,
         passwordProtection = true,
         hyperlinks = false,
-        documentOutlines = false,
+        documentOutlines = true,
     )
 
     override suspend fun open(source: PdfSource, password: String?): PdfDocumentInfo =
@@ -112,6 +114,30 @@ class DesktopPdfBoxEngine : PdfRenderEngine {
                 endPage = pageIndex + 1
             }
             PdfPageText(pageIndex = pageIndex, text = stripper.getText(pdf).trimEnd())
+        }
+    }
+
+    override suspend fun getDocumentOutline(): List<PdfBookmark> = mutex.withLock {
+        withContext(Dispatchers.IO) {
+            val pdf = requireNotNull(document) { "No PDF document is open." }
+            val outline = pdf.documentCatalog.documentOutline ?: return@withContext emptyList()
+            fun readChildren(parent: org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineNode): List<PdfBookmark> {
+                val result = mutableListOf<PdfBookmark>()
+                var item = parent.firstChild
+                while (item != null) {
+                    val destination = (item.destination as? PDPageDestination)
+                        ?: ((item.action as? PDActionGoTo)?.destination as? PDPageDestination)
+                    val pageIndex = destination?.retrievePageNumber()?.takeIf { it >= 0 }
+                    result += PdfBookmark(
+                        title = item.title.orEmpty(),
+                        pageIndex = pageIndex,
+                        children = readChildren(item),
+                    )
+                    item = item.nextSibling
+                }
+                return result
+            }
+            readChildren(outline)
         }
     }
 

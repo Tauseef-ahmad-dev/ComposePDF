@@ -40,7 +40,7 @@ class AndroidPdfiumEngine(
         forms = false,
         passwordProtection = true,
         hyperlinks = true,
-        documentOutlines = true,
+        documentOutlines = false,
     )
 
     override suspend fun open(source: PdfSource, password: String?): PdfDocumentInfo =

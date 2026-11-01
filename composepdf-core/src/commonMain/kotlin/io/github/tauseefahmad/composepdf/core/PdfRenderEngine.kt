@@ -25,6 +25,10 @@ interface PdfRenderEngine {
         throw UnsupportedOperationException("Text extraction is not supported by $name.")
     }
 
+    suspend fun getDocumentOutline(): List<PdfBookmark> {
+        throw UnsupportedOperationException("Document outlines are not supported by $name.")
+    }
+
     suspend fun close()
 }
 
