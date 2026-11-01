@@ -5,12 +5,22 @@ plugins {
 }
 
 kotlin {
+    jvmToolchain(17)
+
     androidTarget {
         publishLibraryVariants("release")
     }
 
-    iosArm64()
-    iosSimulatorArm64()
+    listOf(
+        iosArm64(),
+        iosSimulatorArm64(),
+        iosX64(),
+    ).forEach { target ->
+        target.binaries.framework {
+            baseName = "ComposePDFCore"
+        }
+    }
+
     jvm()
 
     sourceSets {
