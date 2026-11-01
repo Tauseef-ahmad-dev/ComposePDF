@@ -1,4 +1,5 @@
 plugins {
+    alias(libs.plugins.maven.publish)
     signing
     `maven-publish`
     alias(libs.plugins.kotlin.multiplatform)
@@ -65,18 +66,38 @@ android {
     }
 }
 
-/*
- * Release signing is opt-in. Supply SIGNING_KEY and SIGNING_PASSWORD as
- * environment variables (or signingInMemoryKey/signingInMemoryKeyPassword
- * Gradle properties). No signing material belongs in source control.
- */
-signing {
-    val signingKey = providers.gradleProperty("signingInMemoryKey").orNull
-        ?: System.getenv("SIGNING_KEY")
-    val signingPassword = providers.gradleProperty("signingInMemoryKeyPassword").orNull
-        ?: System.getenv("SIGNING_PASSWORD")
-    if (!signingKey.isNullOrBlank()) {
-        useInMemoryPgpKeys(signingKey, signingPassword)
-        sign(publishing.publications)
+
+mavenPublishing {
+    publishToMavenCentral()
+    signAllPublications()
+    coordinates(
+        groupId = project.group.toString(),
+        artifactId = project.name,
+        version = project.version.toString(),
+    )
+    pom {
+        name.set("ComposePDF")
+        description.set("Compose Multiplatform PDF rendering and viewer library")
+        inceptionYear.set("2026")
+        url.set("https://github.com/Tauseef-ahmad-dev/ComposePDF")
+        licenses {
+            license {
+                name.set("The Apache License, Version 2.0")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                distribution.set("repo")
+            }
+        }
+        developers {
+            developer {
+                id.set("tauseef-ahmad-dev")
+                name.set("Tauseef Ahmad")
+                url.set("https://github.com/Tauseef-ahmad-dev")
+            }
+        }
+        scm {
+            url.set("https://github.com/Tauseef-ahmad-dev/ComposePDF")
+            connection.set("scm:git:git://github.com/Tauseef-ahmad-dev/ComposePDF.git")
+            developerConnection.set("scm:git:ssh://git@github.com/Tauseef-ahmad-dev/ComposePDF.git")
+        }
     }
 }
