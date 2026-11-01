@@ -129,4 +129,20 @@ Maven Central publication is not configured as a completed release workflow yet.
 - Publish a release candidate to a staging workflow, verify the resolved artifacts, then publish the stable release.
 - Create a Git tag and GitHub release with supported toolchain versions, platform limitations, and migration notes.
 
-Do not treat `publishAndroidToMavenLocal` as a Maven Central publishing task. Do not publish a public stable release until the above checks are complete.
+### Configure credentials locally
+
+Create a Central Portal user token and configure it in `~/.gradle/gradle.properties` (never in this repository):
+
+```properties
+mavenCentralUsername=YOUR_CENTRAL_PORTAL_TOKEN_USERNAME
+mavenCentralPassword=YOUR_CENTRAL_PORTAL_TOKEN_PASSWORD
+signing.keyId=YOUR_GPG_KEY_ID
+signing.password=YOUR_GPG_KEY_PASSWORD
+signing.secretKeyRingFile=/absolute/path/to/secring.gpg
+```
+
+Alternatively, use the plugin's supported environment variables and in-memory signing key properties. See the [plugin's credential documentation](https://vanniktech.github.io/gradle-maven-publish-plugin/central/#secrets).
+
+After namespace verification, credentials, and a distributed public GPG key are ready, set a release version (for example with `VERSION_NAME=0.1.0`) and run `./gradlew publishToMavenCentral`. The plugin uploads a deployment for validation; manually publish it in the Central Portal unless automatic release is explicitly configured. Do not run this task until the Sonatype namespace and credentials are confirmed.
+
+Do not treat `publishAndroidToMavenLocal` as a Maven Central publishing task. Do not publish a public stable release until all platform artifacts and clean consumer projects have been validated.
