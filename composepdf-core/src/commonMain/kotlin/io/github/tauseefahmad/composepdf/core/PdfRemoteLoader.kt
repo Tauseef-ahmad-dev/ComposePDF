@@ -2,7 +2,6 @@ package io.github.tauseefahmad.composepdf.core
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.engine.cio.CIO
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.http.isSuccess
@@ -15,7 +14,7 @@ internal suspend fun PdfSource.downloadIfRemote(): PdfSource = when (this) {
             "PDF URL must use HTTP or HTTPS."
         }
         val requestHeaders = headers
-        val client = HttpClient(CIO)
+        val client = HttpClient()
         try {
             val response = client.get(url) {
                 headers { requestHeaders.forEach { (name, value) -> append(name, value) } }
