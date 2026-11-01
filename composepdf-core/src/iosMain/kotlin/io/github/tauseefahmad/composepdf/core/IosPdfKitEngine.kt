@@ -108,7 +108,7 @@ class IosPdfKitEngine : PdfRenderEngine {
         withContext(Dispatchers.Default) {
             val pdf = requireNotNull(document) { "No PDF document is open." }
             require(pageIndex in 0 until pdf.pageCount.toInt()) { "Page index is out of range." }
-            val page = requireNotNull(pdf.pageAtIndex(pageIndex.toLong()))
+            val page = requireNotNull(pdf.pageAtIndex(pageIndex.toULong()))
             PdfPageText(pageIndex = pageIndex, text = page.string.orEmpty())
         }
     }
