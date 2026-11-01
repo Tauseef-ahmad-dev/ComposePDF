@@ -1,6 +1,7 @@
 package io.github.tauseefahmad.composepdf.core
 
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.decodeToImageBitmap
 import org.apache.pdfbox.Loader
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.pdmodel.interactive.action.PDActionGoTo
@@ -11,7 +12,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
 import java.io.File
+import javax.imageio.ImageIO
 import java.net.URL
 
 /**
@@ -40,14 +43,15 @@ class DesktopPdfBoxEngine : PdfRenderEngine {
         mutex.withLock {
             withContext(Dispatchers.IO) {
                 closeDocument()
-                val opened = when (source) {
-                    is PdfSource.File -> if (password == null) Loader.loadPDF(File(source.path))
-                        else Loader.loadPDF(File(source.path), password)
-                    is PdfSource.Bytes -> if (password == null) Loader.loadPDF(source.data)
-                        else Loader.loadPDF(source.data, password)
+                val resolvedSource = source.downloadIfRemote()
+                val opened = when (resolvedSource) {
+                    is PdfSource.File -> if (password == null) Loader.loadPDF(File(resolvedSource.path))
+                        else Loader.loadPDF(File(resolvedSource.path), password)
+                    is PdfSource.Bytes -> if (password == null) Loader.loadPDF(resolvedSource.data)
+                        else Loader.loadPDF(resolvedSource.data, password)
                     is PdfSource.Url -> {
-                        val connection = URL(source.url).openConnection().apply {
-                            source.headers.forEach { (key, value) -> setRequestProperty(key, value) }
+                        val connection = URL(resolvedSource.url).openConnection().apply {
+                            resolvedSource.headers.forEach { (key, value) -> setRequestProperty(key, value) }
                             connectTimeout = 15_000
                             readTimeout = 30_000
                         }
@@ -55,7 +59,7 @@ class DesktopPdfBoxEngine : PdfRenderEngine {
                         if (password == null) Loader.loadPDF(bytes) else Loader.loadPDF(bytes, password)
                     }
                     is PdfSource.Uri -> {
-                        val uriFile = File(source.value.removePrefix("file://"))
+                        val uriFile = File(resolvedSource.value.removePrefix("file://"))
                         if (password == null) Loader.loadPDF(uriFile) else Loader.loadPDF(uriFile, password)
                     }
                 }
@@ -93,15 +97,11 @@ class DesktopPdfBoxEngine : PdfRenderEngine {
                 dpi,
                 ImageType.ARGB,
             )
-            val bitmap = ImageBitmap(image.width, image.height)
-            val pixels = image.getRGB(0, 0, image.width, image.height, null, 0, image.width)
-            bitmap.writePixels(
-                buffer = pixels,
-                width = image.width,
-                height = image.height,
-                stride = image.width,
-            )
-            bitmap
+            val output = ByteArrayOutputStream()
+            check(ImageIO.write(image, "png", output)) {
+                "PDFBox rendered an image but no PNG encoder was available."
+            }
+            output.toByteArray().decodeToImageBitmap()
         }
     }
 
