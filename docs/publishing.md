@@ -1,0 +1,90 @@
+# Local Maven publishing and integration
+
+ComposePDF currently publishes snapshots to the local Maven repository for consumer-app validation. This is not a public Maven Central release.
+
+## 1. Publish from the library repository
+
+Use a JDK 17-compatible environment and run from the ComposePDF repository root:
+
+```bash
+./gradlew publishToMavenLocal
+```
+
+The publications are installed in the local Maven repository (normally `~/.m2/repository`). The initial version is `0.1.0-SNAPSHOT`. After changing library code, publish again before rebuilding the consuming app.
+
+## 2. Add the local repository to your Android app
+
+In the consuming app's `settings.gradle.kts`, add `mavenLocal()` to dependency repositories:
+
+```kotlin
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        mavenLocal()
+    }
+}
+```
+
+Keep `mavenLocal()` for local integration only. Remove it when switching to a remotely published release.
+
+## 3. Add the viewer dependency
+
+In the app module's `build.gradle.kts`:
+
+```kotlin
+dependencies {
+    implementation("io.github.tauseefahmad:composepdf-viewer:0.1.0-SNAPSHOT")
+}
+```
+
+The viewer exposes core types through its API dependency, so a separate core dependency is not normally needed.
+
+For optional PDFium:
+
+```kotlin
+dependencies {
+    implementation("io.github.tauseefahmad:composepdf-pdfium-android:0.1.0-SNAPSHOT")
+}
+```
+
+## 4. Render a PDF from a content URI
+
+```kotlin
+@Composable
+fun PdfDocumentScreen(pdfUri: Uri) {
+    val context = LocalContext.current
+    val engineFactory = remember(context) { androidPdfEngineFactory(context) }
+    val state = rememberPdfViewerState(engineFactory)
+
+    ComposePDF(
+        source = PdfSource.Uri(pdfUri.toString()),
+        engineFactory = engineFactory,
+        state = state,
+        modifier = Modifier.fillMaxSize(),
+    )
+}
+```
+
+Make sure the app has permission to read the URI. For documents selected with the Storage Access Framework, retain URI permission when the document must remain accessible after process restarts.
+
+## 5. Validate the consumer
+
+1. Sync Gradle in the consuming app.
+2. Build and run on an Android device or emulator.
+3. Open a real PDF using a content URI.
+4. Verify page rendering, scrolling, zoom, page navigation, and thumbnail selection.
+5. Try text search only with an engine whose `textExtraction` capability is true.
+6. Report dependency resolution, runtime, or rendering issues with the Android version and PDF characteristics.
+
+## Coordinates
+
+| Module | Maven coordinate |
+|---|---|
+| Core | `io.github.tauseefahmad:composepdf-core:0.1.0-SNAPSHOT` |
+| Viewer | `io.github.tauseefahmad:composepdf-viewer:0.1.0-SNAPSHOT` |
+| Android PDFium | `io.github.tauseefahmad:composepdf-pdfium-android:0.1.0-SNAPSHOT` |
+
+## Public release
+
+Maven Central is a separate release step. It requires a verified namespace, Sonatype Central Portal credentials, signing configuration, and a non-snapshot release version. Keep credentials outside source control. Do not publish this preview publicly until consumer integration and supported target builds have been validated.

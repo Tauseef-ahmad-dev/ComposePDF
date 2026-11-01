@@ -1,26 +1,35 @@
 # Quick start
 
-The viewer API is being developed. The initial Android rendering adapter is available in composepdf-core.
+ComposePDF is currently distributed as a local Maven snapshot for integration testing. See [publishing](publishing.md) to publish it and consume it from another app.
 
-## Android
+## Android dependency
 
-Create an engine factory from an application context:
+```kotlin
+dependencies {
+    implementation("io.github.tauseefahmad:composepdf-viewer:0.1.0-SNAPSHOT")
+}
+```
 
-    val engineFactory = androidPdfEngineFactory(context)
+Add `mavenLocal()` to the consuming app's dependency repositories while using a locally published snapshot.
 
-Then place the viewer in Compose:
+## Android viewer
 
-    val state = rememberPdfViewerState(engineFactory)
+Create an engine factory from an Android context:
 
-    ComposePDF(
-        source = PdfSource.File("/path/to/document.pdf"),
-        engineFactory = engineFactory,
-        state = state,
-        modifier = Modifier.fillMaxSize(),
-    )
+```kotlin
+val engineFactory = androidPdfEngineFactory(context)
+val state = rememberPdfViewerState(engineFactory)
 
-For an in-memory document, use PdfSource.Bytes(bytes). For a document provider URI, use PdfSource.Uri(uri.toString()).
+ComposePDF(
+    source = PdfSource.Uri(pdfUri.toString()),
+    engineFactory = engineFactory,
+    state = state,
+    modifier = Modifier.fillMaxSize(),
+)
+```
+
+The application must have permission to read the supplied URI. In-memory documents can use `PdfSource.Bytes(bytes)`, and local paths can use `PdfSource.File(path)`.
 
 ## Other platforms
 
-The common viewer API and platform targets are configured, but built-in iOS and Desktop rendering engines are not yet available. Do not use the viewer on those targets until a compatible engine adapter is provided.
+The common viewer API targets Android, iOS, and Desktop JVM. Android PdfRenderer, Apple PDFKit, and Apache PDFBox are the built-in rendering backends. Validate iOS and Desktop native builds in the consuming environment before production use. Backend capabilities differ; consult [platform support](platform-support.md).
