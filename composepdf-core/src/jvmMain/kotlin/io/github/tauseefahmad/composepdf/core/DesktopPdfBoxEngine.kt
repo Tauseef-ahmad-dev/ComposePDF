@@ -66,8 +66,9 @@ class DesktopPdfBoxEngine : PdfRenderEngine {
     override suspend fun getPageMetadata(pageIndex: Int): PdfPageMetadata =
         mutex.withLock {
             withContext(Dispatchers.IO) {
-                val page = requireNotNull(document) { "No PDF document is open." }
-                    .getPage(pageIndex.also { require(it >= 0) })
+                val pdf = requireNotNull(document) { "No PDF document is open." }
+                require(pageIndex in 0 until pdf.numberOfPages) { "Page index is out of range." }
+                val page = pdf.getPage(pageIndex)
                 PdfPageMetadata(
                     pageIndex = pageIndex,
                     width = page.mediaBox.width,
