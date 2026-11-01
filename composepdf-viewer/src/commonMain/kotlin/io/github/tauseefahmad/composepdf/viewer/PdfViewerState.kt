@@ -11,6 +11,7 @@ import io.github.tauseefahmad.composepdf.core.PdfEngineFactory
 import io.github.tauseefahmad.composepdf.core.PdfError
 import io.github.tauseefahmad.composepdf.core.PdfRenderOptions
 import io.github.tauseefahmad.composepdf.core.PdfSource
+import io.github.tauseefahmad.composepdf.core.PdfDownloadException
 import io.github.tauseefahmad.composepdf.core.PdfRenderEngine
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
@@ -183,7 +184,7 @@ class PdfViewerState internal constructor(
                 _loadingState.value = PdfLoadingState.Idle
                 throw cancellation
             } catch (throwable: Throwable) {
-                _error.value = PdfError.Unknown(throwable.message)
+                _error.value = throwable.toPdfError()
                 _loadingState.value = PdfLoadingState.Failed
                 closeEngine()
             }
@@ -277,5 +278,25 @@ class PdfViewerState internal constructor(
         val activeEngine = engine
         engine = null
         if (activeEngine != null) runCatching { activeEngine.close() }
+    }
+}
+
+
+/** Maps platform and transport exceptions to stable viewer-facing error categories. */
+private fun Throwable.toPdfError(): PdfError {
+    val detail = message.orEmpty()
+    val normalized = detail.lowercase()
+    return when {
+        this is PdfDownloadException -> PdfError.NetworkFailure
+        normalized.contains("password") && normalized.contains("incorrect") -> PdfError.IncorrectPassword
+        normalized.contains("password") && (normalized.contains("required") || normalized.contains("locked")) ->
+            PdfError.PasswordRequired
+        normalized.contains("permission") || normalized.contains("denied") -> PdfError.PermissionDenied
+        normalized.contains("http") || normalized.contains("network") ||
+            normalized.contains("hostname") || normalized.contains("connection") ||
+            normalized.contains("timeout") || normalized.contains("download") -> PdfError.NetworkFailure
+        this is UnsupportedOperationException -> PdfError.UnsupportedFeature
+        this is IllegalArgumentException -> PdfError.InvalidDocument
+        else -> PdfError.Unknown(message)
     }
 }
