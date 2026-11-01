@@ -1,6 +1,7 @@
 package io.github.tauseefahmad.composepdf.viewer
 
 import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.ImageBitmap
@@ -9,8 +10,10 @@ import io.github.tauseefahmad.composepdf.core.PdfEngineFactory
 import io.github.tauseefahmad.composepdf.core.PdfError
 import io.github.tauseefahmad.composepdf.core.PdfRenderOptions
 import io.github.tauseefahmad.composepdf.core.PdfSource
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
 
-/** Owns a single viewer document session and its rendered page cache. */
+/** Owns a single viewer document session and its bounded rendered-page cache. */
 class PdfViewerState internal constructor(
     private val engineFactory: PdfEngineFactory,
 ) {
@@ -28,13 +31,16 @@ class PdfViewerState internal constructor(
     val error: State<PdfError?> = _error
 
     private val renderedPages = mutableStateMapOf<Int, ImageBitmap>()
+    private val cacheOrder = mutableStateListOf<Int>()
+    private val renderMutex = Mutex()
+    private val maxCachedPages = 12
     private var engine = engineFactory.create()
 
     internal fun pageImage(pageIndex: Int): ImageBitmap? = renderedPages[pageIndex]
 
     suspend fun open(source: PdfSource) {
         closeEngine()
-        renderedPages.clear()
+        clearPageCache()
         _documentInfo.value = null
         _currentPage.value = 0
         _error.value = null
@@ -45,6 +51,10 @@ class PdfViewerState internal constructor(
         try {
             _documentInfo.value = newEngine.open(source)
             _loadingState.value = PdfLoadingState.Loaded
+        } catch (cancellation: CancellationException) {
+            closeEngine()
+            _loadingState.value = PdfLoadingState.Idle
+            throw cancellation
         } catch (throwable: Throwable) {
             _error.value = PdfError.Unknown(throwable.message)
             _loadingState.value = PdfLoadingState.Failed
@@ -67,23 +77,45 @@ class PdfViewerState internal constructor(
     }
 
     internal suspend fun renderPage(pageIndex: Int, targetWidth: Int): ImageBitmap {
-        renderedPages[pageIndex]?.let { return it }
-        val metadata = engine.getPageMetadata(pageIndex)
-        val targetHeight = (targetWidth * metadata.height / metadata.width).toInt().coerceAtLeast(1)
-        val bitmap = engine.renderPage(
-            pageIndex = pageIndex,
-            options = PdfRenderOptions(width = targetWidth, height = targetHeight),
-        )
-        renderedPages[pageIndex] = bitmap
-        return bitmap
+        renderMutex.lock()
+        try {
+            renderedPages[pageIndex]?.let {
+                cacheOrder.remove(pageIndex)
+                cacheOrder.add(pageIndex)
+                return it
+            }
+
+            val metadata = engine.getPageMetadata(pageIndex)
+            val targetHeight = (targetWidth * metadata.height / metadata.width).toInt().coerceAtLeast(1)
+            val bitmap = engine.renderPage(
+                pageIndex = pageIndex,
+                options = PdfRenderOptions(width = targetWidth, height = targetHeight),
+            )
+            renderedPages[pageIndex] = bitmap
+            cacheOrder.remove(pageIndex)
+            cacheOrder.add(pageIndex)
+
+            while (cacheOrder.size > maxCachedPages) {
+                val evictedPage = cacheOrder.removeAt(0)
+                renderedPages.remove(evictedPage)
+            }
+            return bitmap
+        } finally {
+            renderMutex.unlock()
+        }
     }
 
     suspend fun close() {
         closeEngine()
-        renderedPages.clear()
+        clearPageCache()
         _documentInfo.value = null
         _currentPage.value = 0
         _loadingState.value = PdfLoadingState.Idle
+    }
+
+    private fun clearPageCache() {
+        renderedPages.clear()
+        cacheOrder.clear()
     }
 
     private suspend fun closeEngine() {
