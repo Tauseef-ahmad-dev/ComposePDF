@@ -23,11 +23,13 @@ A configured target does not guarantee feature parity. Check `PdfEngineCapabilit
 
 ## Publish locally
 
-The project currently supports local Maven publication for integration testing. From the repository root:
+For Android consumer-app integration, run from the repository root:
 
 ```bash
-./gradlew publishToMavenLocal
+./gradlew publishAndroidToMavenLocal
 ```
+
+This publishes Android release variants and multiplatform metadata without building iOS or Desktop targets. Use `./gradlew publishToMavenLocal` only when validating all configured targets.
 
 The initial coordinates are:
 
