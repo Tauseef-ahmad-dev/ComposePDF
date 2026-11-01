@@ -21,7 +21,7 @@ val registry = PdfEngineRegistry(
 val engine = registry.create(PdfEngineType.AUTO)
 ```
 
-Use `androidPdfEngineFactory(context)` on Android and `iosPdfKitEngineFactory()` on iOS.
+Use `androidPdfEngineFactory(context)` on Android, `iosPdfKitEngineFactory()` on iOS, and `desktopPdfBoxEngineFactory()` on Desktop. To opt into Android PDFium, add `implementation(projects.composepdfPdfiumAndroid)` and select `registry.create(PdfEngineType.PDFIUM)`.
 
 ## Threading and lifecycle
 
