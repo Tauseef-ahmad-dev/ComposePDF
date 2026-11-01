@@ -16,7 +16,7 @@ A configured target is not a guarantee that every backend or feature is availabl
 | Android | Android PdfRenderer | Initial implementation |
 | iOS | Apple PDFKit | Initial adapter added; native build validation pending |
 | Desktop JVM | Apache PDFBox | Initial adapter added; JVM build validation pending |
-| Android / iOS / Desktop | PDFium | Not bundled yet; optional integration requires a compatible distribution per target |
+| Android | PDFiumAndroidKt | Optional adapter in `composepdf-pdfium-android`; native build validation pending |\n| iOS / Desktop | PDFium | Not bundled; compatible Kotlin/Native/JVM distributions remain future work |
 
 ## Capability notes
 
@@ -28,4 +28,4 @@ Use `PdfEngineRegistry` to select a native, PDFium, or custom engine. Register o
 
 ## PDFium status
 
-PDFium is intentionally not added as a mandatory common dependency. The available packages currently have different Android/JVM/Kotlin-Native packaging and Kotlin toolchain requirements. A shared integration needs a pinned compatible version, native binaries for each supported architecture, license review, and an adapter implementing the ComposePDF engine contract.
+The Android PDFium adapter is isolated in the optional `composepdf-pdfium-android` module and uses the Apache-2.0 io.legere:pdfiumandroid binding. iOS and Desktop PDFium are not bundled yet because their native binary packaging and Kotlin/Native/JVM integration require separate adapters.
