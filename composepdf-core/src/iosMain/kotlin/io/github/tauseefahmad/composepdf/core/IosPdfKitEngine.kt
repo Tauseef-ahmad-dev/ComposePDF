@@ -4,6 +4,8 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
+import kotlinx.cinterop.ByteVar
+import kotlinx.cinterop.reinterpret
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -32,11 +34,11 @@ class IosPdfKitEngine : PdfRenderEngine {
         pageRendering = true,
         textExtraction = true,
         textSelection = false,
-        annotations = true,
+        annotations = false,
         forms = false,
         passwordProtection = true,
-        hyperlinks = true,
-        documentOutlines = true,
+        hyperlinks = false,
+        documentOutlines = false,
     )
 
     override suspend fun open(source: PdfSource, password: String?): PdfDocumentInfo =
@@ -56,7 +58,7 @@ class IosPdfKitEngine : PdfRenderEngine {
                     )
                 } ?: throw IllegalArgumentException("PDFKit could not open the supplied document.")
 
-                if (opened.isLocked()) {
+                if (opened.isLocked) {
                     require(!password.isNullOrEmpty()) { "This PDF requires a password." }
                     require(opened.unlockWithPassword(password)) { "The PDF password is incorrect." }
                 }
@@ -121,7 +123,7 @@ class IosPdfKitEngine : PdfRenderEngine {
     private fun NSData.toByteArray(): ByteArray {
         val count = length.toInt()
         if (count == 0) return byteArrayOf()
-        return bytes!!.readBytes(count)
+        return bytes!!.reinterpret<ByteVar>().readBytes(count)
     }
 }
 
