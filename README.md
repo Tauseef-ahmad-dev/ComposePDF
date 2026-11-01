@@ -7,7 +7,7 @@ A Compose Multiplatform PDF viewer library for Android, iOS, and Desktop.
 ## Modules
 
 - **composepdf-core** — document sources and metadata, engine contracts, engine registry, rendering options, text models, and platform rendering adapters.
-- **composepdf-viewer** — Compose viewer API, document state, loading/error states, and lazy vertical page presentation.
+- **composepdf-viewer** — Compose viewer API, document state, loading/error states, and lazy vertical page presentation.\n- **composepdf-pdfium-android** — Optional Android PDFium backend; applications opt in to its native binaries.
 
 ## Targets
 
