@@ -1,6 +1,7 @@
 package io.github.tauseefahmad.composepdf.core
 
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.decodeToImageBitmap
 import org.apache.pdfbox.Loader
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.pdmodel.interactive.action.PDActionGoTo
@@ -11,7 +12,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
 import java.io.File
+import javax.imageio.ImageIO
 import java.net.URL
 
 /**
@@ -94,15 +97,11 @@ class DesktopPdfBoxEngine : PdfRenderEngine {
                 dpi,
                 ImageType.ARGB,
             )
-            val bitmap = ImageBitmap(image.width, image.height)
-            val pixels = image.getRGB(0, 0, image.width, image.height, null, 0, image.width)
-            bitmap.writePixels(
-                buffer = pixels,
-                width = image.width,
-                height = image.height,
-                stride = image.width,
-            )
-            bitmap
+            val output = ByteArrayOutputStream()
+            check(ImageIO.write(image, "png", output)) {
+                "PDFBox rendered an image but no PNG encoder was available."
+            }
+            output.toByteArray().decodeToImageBitmap()
         }
     }
 
