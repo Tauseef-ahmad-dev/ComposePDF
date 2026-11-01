@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.ImageBitmap
+import io.github.tauseefahmad.composepdf.core.PdfBookmark
 import io.github.tauseefahmad.composepdf.core.PdfDocumentInfo
 import io.github.tauseefahmad.composepdf.core.PdfEngineFactory
 import io.github.tauseefahmad.composepdf.core.PdfError
@@ -39,6 +40,10 @@ class PdfViewerState internal constructor(
     private val _error = mutableStateOf<PdfError?>(null)
     val error: State<PdfError?> = _error
 
+    private val _bookmarks = mutableStateListOf<PdfBookmark>()
+    /** Hierarchical document outline; empty when unsupported or when no outline exists. */
+    val bookmarks: List<PdfBookmark> get() = _bookmarks
+
     private val _searchResults = mutableStateListOf<PdfSearchResult>()
     /** Results for the most recent document-wide text search. */
     val searchResults: List<PdfSearchResult> get() = _searchResults
@@ -48,6 +53,7 @@ class PdfViewerState internal constructor(
 
     /** True when the active engine advertises text extraction support. */
     val supportsTextSearch: Boolean get() = engine?.capabilities?.textExtraction == true
+    val supportsDocumentOutlines: Boolean get() = engine?.capabilities?.documentOutlines == true
 
     private val renderedPages = mutableStateMapOf<Int, ImageBitmap>()
     private val cacheOrder = mutableStateListOf<Int>()
@@ -110,6 +116,24 @@ class PdfViewerState internal constructor(
         }
     }
 
+    /** Loads the document outline when the active engine supports it. */
+    suspend fun loadBookmarks(): List<PdfBookmark> {
+        renderMutex.lock()
+        try {
+            val activeEngine = requireNotNull(engine) { "No PDF document is open." }
+            if (!activeEngine.capabilities.documentOutlines) {
+                _bookmarks.clear()
+                return emptyList()
+            }
+            val outline = activeEngine.getDocumentOutline()
+            _bookmarks.clear()
+            _bookmarks.addAll(outline)
+            return outline
+        } finally {
+            renderMutex.unlock()
+        }
+    }
+
     fun clearSearch() {
         _searchResults.clear()
         _activeSearchResultIndex.value = -1
@@ -133,6 +157,7 @@ class PdfViewerState internal constructor(
             closeEngine()
             clearPageCache()
             clearSearch()
+            _bookmarks.clear()
             _documentInfo.value = null
             _currentPage.value = 0
             _error.value = null
@@ -171,6 +196,22 @@ class PdfViewerState internal constructor(
         if (count > 0) _currentPage.value = pageIndex.coerceIn(0, count - 1)
     }
 
+    /** Renders a lightweight preview without polluting the full-page LRU cache. */
+    internal suspend fun renderThumbnail(pageIndex: Int, targetWidth: Int = 120): ImageBitmap {
+        renderMutex.lock()
+        try {
+            val activeEngine = requireNotNull(engine) { "No PDF document is open." }
+            val metadata = pageMetadata(pageIndex)
+            val targetHeight = (targetWidth * metadata.height / metadata.width).toInt().coerceAtLeast(1)
+            return activeEngine.renderPage(
+                pageIndex = pageIndex,
+                options = PdfRenderOptions(width = targetWidth, height = targetHeight),
+            )
+        } finally {
+            renderMutex.unlock()
+        }
+    }
+
     internal suspend fun renderPage(pageIndex: Int, targetWidth: Int): ImageBitmap {
         renderMutex.lock()
         try {
@@ -207,6 +248,7 @@ class PdfViewerState internal constructor(
             closeEngine()
             clearPageCache()
             clearSearch()
+            _bookmarks.clear()
             _documentInfo.value = null
             _currentPage.value = 0
             _loadingState.value = PdfLoadingState.Idle
