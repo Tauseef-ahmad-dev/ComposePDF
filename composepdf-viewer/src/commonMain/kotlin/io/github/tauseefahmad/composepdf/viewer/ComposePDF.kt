@@ -18,6 +18,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,8 +32,11 @@ import androidx.compose.ui.unit.dp
 import io.github.tauseefahmad.composepdf.core.PdfEngineFactory
 import io.github.tauseefahmad.composepdf.core.PdfError
 import io.github.tauseefahmad.composepdf.core.PdfSource
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 /**
  * Displays a PDF document using a caller-provided rendering engine.
@@ -50,6 +54,17 @@ fun ComposePDF(
     onEvent: (PdfViewerEvent) -> Unit = {},
 ) {
     val listState = rememberLazyListState()
+
+    LaunchedEffect(state) {
+        try {
+            awaitCancellation()
+        } finally {
+            withContext(NonCancellable) {
+                state.close()
+                onEvent(PdfViewerEvent.DocumentClosed)
+            }
+        }
+    }
 
     LaunchedEffect(source, state) {
         state.open(source)
