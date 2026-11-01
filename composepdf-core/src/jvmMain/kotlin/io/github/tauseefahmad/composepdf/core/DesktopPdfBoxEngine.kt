@@ -12,7 +12,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.net.URL
 
 /**
  * Desktop JVM backend using Apache PDFBox.
@@ -40,7 +39,8 @@ class DesktopPdfBoxEngine : PdfRenderEngine {
         mutex.withLock {
             withContext(Dispatchers.IO) {
                 closeDocument()
-                val opened = when (source) {
+                val resolvedSource = source.downloadIfRemote()
+                val opened = when (resolvedSource) {
                     is PdfSource.File -> if (password == null) Loader.loadPDF(File(source.path))
                         else Loader.loadPDF(File(source.path), password)
                     is PdfSource.Bytes -> if (password == null) Loader.loadPDF(source.data)
