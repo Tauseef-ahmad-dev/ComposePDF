@@ -35,8 +35,8 @@ The initial coordinates are:
 
 - Group: `io.github.tauseefahmad`
 - Version: `0.1.0-SNAPSHOT`
-- Viewer: `io.github.tauseefahmad:composepdf-viewer:0.1.0-SNAPSHOT`
-- Core: `io.github.tauseefahmad:composepdf-core:0.1.0-SNAPSHOT`
+- Viewer (Android): `io.github.tauseefahmad:composepdf-viewer-android:0.1.0-SNAPSHOT`
+- Core (Android): `io.github.tauseefahmad:composepdf-core-android:0.1.0-SNAPSHOT`
 - Optional Android PDFium: `io.github.tauseefahmad:composepdf-pdfium-android:0.1.0-SNAPSHOT`
 
 See [local publishing and consumer setup](docs/publishing.md).
@@ -47,7 +47,7 @@ Add `mavenLocal()` to the consuming application's dependency repositories while 
 
 ```kotlin
 dependencies {
-    implementation("io.github.tauseefahmad:composepdf-viewer:0.1.0-SNAPSHOT")
+    implementation("io.github.tauseefahmad:composepdf-viewer-android:0.1.0-SNAPSHOT")
 }
 ```
 
