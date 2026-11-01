@@ -117,7 +117,7 @@ class AndroidPdfiumEngine(
     override suspend fun extractText(pageIndex: Int): PdfPageText = mutex.withLock {
         val pdf = requireNotNull(document) { "No PDF document is open." }
         require(pageIndex in 0 until pdf.getPageCount()) { "Page index is out of range." }
-        pdf.openPage(pageIndex).use { page ->
+        requireNotNull(pdf.openPage(pageIndex)) { "Unable to open PDF page $pageIndex." }.use { page ->
             page.openTextPage().use { textPage ->
                 val count = textPage.textPageCountChars()
                 PdfPageText(
