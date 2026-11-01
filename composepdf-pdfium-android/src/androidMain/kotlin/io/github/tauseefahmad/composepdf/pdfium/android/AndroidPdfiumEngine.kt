@@ -48,8 +48,7 @@ class AndroidPdfiumEngine(
             withContext(Dispatchers.IO) {
                 closeDocument()
                 try {
-                    val resolvedSource = source.downloadIfRemote()
-                    val bytes = when (resolvedSource) {
+                    val bytes = when (source) {
                         is PdfSource.File -> File(source.path).readBytes()
                         is PdfSource.Bytes -> source.data
                         is PdfSource.Uri -> {
