@@ -10,7 +10,7 @@ From the ComposePDF repository root, using a JDK 17-compatible environment:
 ./gradlew publishAndroidToMavenLocal
 ```
 
-This publishes Android release artifacts for core, viewer, and optional PDFium. It intentionally skips the Kotlin Multiplatform metadata publication because generating that metadata compiles all configured platform source sets, including iOS. The Android publication uses the documented base artifact coordinates.
+This publishes Android release artifacts for core, viewer, and optional PDFium. It intentionally skips the Kotlin Multiplatform metadata publication because generating that metadata compiles all configured platform source sets, including iOS. The Android publication uses the Android variant artifact IDs with an `-android` suffix.
 
 The aggregate `publishToMavenLocal` task publishes every configured target and may fail if an unrelated platform backend does not compile. Use it only when validating all configured targets.
 
@@ -38,7 +38,7 @@ In the app module's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("io.github.tauseefahmad:composepdf-viewer:0.1.0-SNAPSHOT")
+    implementation("io.github.tauseefahmad:composepdf-viewer-android:0.1.0-SNAPSHOT")
 }
 ```
 
@@ -85,8 +85,8 @@ Make sure the app has permission to read the URI. For documents selected with th
 
 | Module | Maven coordinate |
 |---|---|
-| Core | `io.github.tauseefahmad:composepdf-core:0.1.0-SNAPSHOT` |
-| Viewer | `io.github.tauseefahmad:composepdf-viewer:0.1.0-SNAPSHOT` |
+| Core (Android) | `io.github.tauseefahmad:composepdf-core-android:0.1.0-SNAPSHOT` |
+| Viewer (Android) | `io.github.tauseefahmad:composepdf-viewer-android:0.1.0-SNAPSHOT` |
 | Android PDFium | `io.github.tauseefahmad:composepdf-pdfium-android:0.1.0-SNAPSHOT` |
 
 ## Public release
