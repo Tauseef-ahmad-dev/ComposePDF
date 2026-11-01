@@ -52,7 +52,7 @@ class IosPdfKitEngine : PdfRenderEngine {
                             ?: throw IllegalArgumentException("Invalid PDF URL: ${resolvedSource.value}")
                         PDFDocument(url = url)
                     }
-                    is PdfSource.Bytes -> PDFDocument(data = source.data.toNSData())
+                    is PdfSource.Bytes -> PDFDocument(data = resolvedSource.data.toNSData())
                     is PdfSource.Url -> throw UnsupportedOperationException(
                         "Pass downloaded bytes or a local file URL to PDFKit. Network loading is application-managed.",
                     )
