@@ -39,6 +39,15 @@ class PdfViewerState internal constructor(
 
     internal fun pageImage(pageIndex: Int): ImageBitmap? = renderedPages[pageIndex]
 
+    private val pageMetadataCache = mutableStateMapOf<Int, io.github.tauseefahmad.composepdf.core.PdfPageMetadata>()
+
+    internal suspend fun pageMetadata(pageIndex: Int): io.github.tauseefahmad.composepdf.core.PdfPageMetadata {
+        pageMetadataCache[pageIndex]?.let { return it }
+        val metadata = requireNotNull(engine) { "No PDF document is open." }.getPageMetadata(pageIndex)
+        pageMetadataCache[pageIndex] = metadata
+        return metadata
+    }
+
     suspend fun open(source: PdfSource) {
         renderMutex.lock()
         try {
@@ -92,7 +101,7 @@ class PdfViewerState internal constructor(
             }
 
             val activeEngine = requireNotNull(engine) { "No PDF document is open." }
-            val metadata = activeEngine.getPageMetadata(pageIndex)
+            val metadata = pageMetadata(pageIndex)
             val targetHeight = (targetWidth * metadata.height / metadata.width).toInt().coerceAtLeast(1)
             val bitmap = activeEngine.renderPage(
                 pageIndex = pageIndex,
@@ -128,6 +137,7 @@ class PdfViewerState internal constructor(
     private fun clearPageCache() {
         renderedPages.clear()
         cacheOrder.clear()
+        pageMetadataCache.clear()
     }
 
     private suspend fun closeEngine() {
