@@ -9,10 +9,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.net.URL
-import javax.imageio.ImageIO
 
 /**
  * Desktop JVM backend using Apache PDFBox.
@@ -85,13 +83,13 @@ class DesktopPdfBoxEngine : PdfRenderEngine {
         withContext(Dispatchers.IO) {
             val pdf = requireNotNull(document) { "No PDF document is open." }
             require(pageIndex in 0 until pdf.numberOfPages) { "Page index is out of range." }
+            val pageWidth = pdf.getPage(pageIndex).mediaBox.width
+            val dpi = (options.width.toFloat() / pageWidth) * 72f
             val image = requireNotNull(renderer).renderImageWithDPI(
                 pageIndex,
-                options.dpi,
+                dpi,
                 ImageType.ARGB,
             )
-            val output = ByteArrayOutputStream()
-            check(ImageIO.write(image, "png", output)) { "No PNG encoder is available." }
             val bitmap = ImageBitmap(image.width, image.height)
             val pixels = image.getRGB(0, 0, image.width, image.height, null, 0, image.width)
             bitmap.writePixels(
