@@ -3,9 +3,10 @@
 ComposePDF resolves engines through `PdfEngineRegistry`. Register a factory for each backend that the application ships:
 
 ```kotlin
+// Android: include the optional composepdf-pdfium-android module to use PDFium.
 val engines = PdfEngineRegistry(
-    nativeFactory = androidPdfEngineFactory(context), // Android
-    pdfiumFactory = optionalPdfiumFactory,
+    nativeFactory = androidPdfEngineFactory(context),
+    pdfiumFactory = androidPdfiumEngineFactory(context),
     customFactory = applicationSpecificFactory,
 )
 val engine = engines.create(PdfEngineType.AUTO)
