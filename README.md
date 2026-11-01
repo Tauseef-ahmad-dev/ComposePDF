@@ -32,7 +32,7 @@ Feature parity is not guaranteed. Inspect `PdfEngineCapabilities` before exposin
 - Previous/next and direct page navigation
 - Document-wide text search on engines that support text extraction
 - Lazy page thumbnails and document outline navigation where supported
-- Bounded in-memory rendered-page cache
+- Configurable bounded in-memory rendered-page cache (`PdfViewerConfig.maxCachedPages`)
 
 ### Current limitations
 
