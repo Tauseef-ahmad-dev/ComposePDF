@@ -73,7 +73,7 @@ val source = PdfSource.Url(
 )
 ```
 
-The current shared URL loader downloads the response into memory before the platform engine opens it. This can be expensive for large files. Disk-backed streaming and cache policy are planned follow-up work.
+The current shared URL loader downloads the response into memory before the platform engine opens it. This can be expensive for large files. Disk-backed streaming, remote-document cache policy, download progress, and cancellation controls are still planned follow-up work.
 
 ## 5. Consumer validation checklist
 
@@ -90,6 +90,20 @@ Before relying on a version in an application, verify:
 9. Test representative small, large, scanned, and password-protected PDFs against the engine capability matrix.
 
 ## 6. Toolchain and compatibility
+
+The viewer's rendered bitmap cache can be tuned per viewer:
+
+\`\`\`kotlin
+val config = PdfViewerConfig(maxCachedPages = 6)
+ComposePDF(
+    source = source,
+    engineFactory = engineFactory,
+    state = state,
+    config = config,
+)
+\`\`\`
+
+Lower values reduce retained bitmap memory at the cost of more page re-rendering when users scroll back. The default is 12 pages.
 
 The current project build uses:
 
