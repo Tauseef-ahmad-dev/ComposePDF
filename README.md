@@ -2,12 +2,12 @@
 
 A Compose Multiplatform PDF viewer library for Android, iOS, and Desktop.
 
-> **Status: early development.** The initial foundation and Android PdfRenderer adapter are in place. APIs are not yet stable. Built-in iOS and Desktop rendering engines are still planned.
+> **Status: early development.** The common foundation and initial Android, iOS PDFKit, and Desktop PDFBox adapters are in place. APIs are not yet stable; native build validation remains outstanding.
 
 ## Modules
 
-- **composepdf-core** — document sources and metadata, engine contracts, rendering options, text models, capability declarations, and the initial Android PdfRenderer adapter.
-- **composepdf-viewer** — Compose viewer API, document state, loading/error states, and lazy vertical page presentation.
+- **composepdf-core** — document sources and metadata, engine contracts, engine registry, rendering options, text models, and platform rendering adapters.
+- **composepdf-viewer** — Compose viewer API, document state, loading/error states, and lazy vertical page presentation.\n- **composepdf-pdfium-android** — Optional Android PDFium backend; applications opt in to its native binaries.
 
 ## Targets
 
@@ -34,11 +34,11 @@ Then render a document:
         modifier = Modifier.fillMaxSize(),
     )
 
-The initial Android adapter supports filesystem paths, byte arrays, and content URIs. URL loading and password-protected documents are not supported yet.
+Android uses PdfRenderer for local files, byte arrays, and content URIs. iOS uses PDFKit for local files and byte arrays. Desktop uses Apache PDFBox for files, bytes, and URLs, including password-protected PDFs. Backend capabilities differ; see the platform support matrix.
 
 ## Architecture
 
-The viewer depends on the PdfRenderEngine abstraction rather than a concrete PDF backend. Engines declare their supported capabilities, and platform-specific adapters own document access, rendering, threading, and native-resource cleanup.
+The viewer depends on the PdfRenderEngine abstraction rather than a concrete PDF backend. PdfEngineRegistry selects a native, PDFium, or custom engine. Engines declare their supported capabilities, and platform adapters own document access, rendering, threading, and native-resource cleanup.
 
 ## Current feature status
 

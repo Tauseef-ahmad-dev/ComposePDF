@@ -19,7 +19,7 @@ kotlin {
     ).forEach { target ->
         target.binaries.framework {
             baseName = "ComposePDFViewer"
-            export(projects.composepdfCore)
+            export(project(":composepdf-core"))
         }
     }
 
@@ -27,7 +27,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            api(projects.composepdfCore)
+            api(project(":composepdf-core"))
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.ui)

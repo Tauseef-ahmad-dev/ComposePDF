@@ -18,3 +18,4 @@ rootProject.name = "ComposePDF"
 
 include(":composepdf-core")
 include(":composepdf-viewer")
+include(":composepdf-pdfium-android")

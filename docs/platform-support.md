@@ -2,31 +2,30 @@
 
 ## Build targets
 
-The project is configured for:
-
 - Android
 - iOS Arm64
 - iOS Simulator Arm64
-- Desktop JVM
+- Desktop JVM (macOS, Windows, Linux)
 
-A configured compilation target does not imply that a built-in PDF rendering engine is already available on that platform.
+A configured target is not a guarantee that every backend or feature is available on every architecture.
 
-## Current functional support
+## Rendering backends
 
-| Capability | Android | iOS | Desktop |
-|---|---|---|---|
-| Shared viewer UI | Yes | Yes | Yes |
-| Built-in rendering backend | Initial PdfRenderer adapter | Not yet | Not yet |
-| Local file loading | Yes | Not yet | Not yet |
-| Byte-array loading | Yes | Not yet | Not yet |
-| Content URI loading | Yes | N/A | N/A |
-| Remote URL loading | Not yet | Not yet | Not yet |
-| Text extraction | Not yet | Not yet | Not yet |
-| Search | Not yet | Not yet | Not yet |
-| Annotations | Not yet | Not yet | Not yet |
+| Platform | Backend | Status |
+|---|---|---|
+| Android | Android PdfRenderer | Initial implementation |
+| iOS | Apple PDFKit | Initial adapter added; native build validation pending |
+| Desktop JVM | Apache PDFBox | Initial adapter added; JVM build validation pending |
+| Android | PDFiumAndroidKt | Optional adapter in `composepdf-pdfium-android`; native build validation pending |\n| iOS / Desktop | PDFium | Not bundled; compatible Kotlin/Native/JVM distributions remain future work |
 
-## Android PdfRenderer adapter
+## Capability notes
 
-Use androidPdfEngineFactory(context) to create an engine factory. The Android adapter supports local filesystem paths, in-memory bytes, and content URIs. Content URI streams are copied to a temporary cache file because PdfRenderer requires a seekable file descriptor.
+The viewer uses `PdfEngineCapabilities` to expose backend differences. Android PdfRenderer currently renders local files, bytes, and content URIs. PDFBox supports local files, bytes, URL downloads, password-protected documents, and text extraction. PDFKit supports local files, file URLs, bytes, password unlocking, page rendering, and basic text extraction. Do not assume feature parity when changing engines.
 
-The adapter currently reports unsupported capabilities rather than implying feature parity with other PDF engines.
+## Engine selection
+
+Use `PdfEngineRegistry` to select a native, PDFium, or custom engine. Register only factories whose platform artifacts are included in the consuming application. AUTO prefers the native engine, then PDFium, then custom.
+
+## PDFium status
+
+The Android PDFium adapter is isolated in the optional `composepdf-pdfium-android` module and uses the Apache-2.0 io.legere:pdfiumandroid binding. iOS and Desktop PDFium are not bundled yet because their native binary packaging and Kotlin/Native/JVM integration require separate adapters.
