@@ -1,99 +1,123 @@
 # ComposePDF
 
-A Compose Multiplatform PDF rendering and viewer library for Android, iOS, and Desktop JVM.
+ComposePDF is an open-source Compose Multiplatform PDF rendering and viewing library for Android, iOS, and Desktop JVM.
 
-> **Status: early preview (0.1.0-SNAPSHOT).** The API and platform adapters are still evolving. Validate the targets and features you use in your consuming application before relying on them in production.
+> **Current release line: 0.1.0-SNAPSHOT (preview).** The project is not yet a stable 1.0 release. Platform compilation has been validated, but runtime compatibility and performance must be verified in consuming applications.
 
 ## Modules
 
-- **composepdf-core** — document sources, metadata, engine contracts, capabilities, and platform rendering adapters.
-- **composepdf-viewer** — Compose PDF viewer, zoom and fit controls, page navigation, text search controls, thumbnails, and bookmark navigation.
-- **composepdf-pdfium-android** — optional Android PDFium backend. Applications opt in to its native binaries.
+| Module | Purpose |
+|---|---|
+| `composepdf-core` | PDF sources, engine contracts, capabilities, metadata, and platform rendering backends |
+| `composepdf-viewer` | Compose viewer, zoom, page navigation, search controls, thumbnails, and bookmark navigation |
+| `composepdf-pdfium-android` | Optional Android PDFium backend; applications opt in to its native binaries |
 
-## Targets and rendering backends
+## Platform support
 
-| Target | Backend | Notes |
+| Platform | Default backend | Current capabilities and constraints |
 |---|---|---|
-| Android | Android PdfRenderer | Local files, bytes, and content URIs; no text extraction or document outlines |
-| iOS | Apple PDFKit | Local files, bytes, page rendering, and text extraction; validate with an iOS build |
-| Desktop JVM | Apache PDFBox | Files, bytes, URLs, password-protected PDFs, text extraction, and document outlines |
-| Android (optional) | PDFiumAndroid | Text extraction and additional PDF features; document outline extraction is not currently exposed |
+| Android | Android PdfRenderer | File, content URI, bytes, and HTTP(S) URL sources; page rendering; no text extraction, outlines, or password support |
+| iOS | Apple PDFKit | File, URL, and bytes; page rendering, text extraction, and password unlocking |
+| Desktop JVM | Apache PDFBox | File, URL, and bytes; page rendering, text extraction, outlines, and password-protected PDFs |
+| Android (optional) | PDFiumAndroid | Optional native backend with text extraction; outline extraction is not currently exposed |
 
-A configured target does not guarantee feature parity. Check `PdfEngineCapabilities` before exposing optional functionality. Web is not currently supported.
+Feature parity is not guaranteed. Inspect `PdfEngineCapabilities` before exposing optional controls. Web is not currently supported.
 
-## Publish locally
+## Features
 
-For Android consumer-app integration, run from the repository root:
+- Compose Multiplatform viewer for Android, iOS, and Desktop JVM
+- Sources: local file, platform URI, in-memory bytes, and HTTP(S) URL
+- Custom HTTP request headers for authenticated URL downloads
+- Pinch zoom, pan, double-tap zoom, and fit modes
+- Previous/next and direct page navigation
+- Document-wide text search on engines that support text extraction
+- Lazy page thumbnails and document outline navigation where supported
+- Bounded in-memory rendered-page cache
+
+### Current limitations
+
+- Remote PDFs are currently downloaded fully into memory before being passed to the renderer. Disk-backed streaming and persistent download caching are planned; large documents can therefore require substantial memory.
+- The viewer's rendered-page cache is bounded, but cache sizing is currently internal.
+- Text selection, rendered search highlights, annotation editing/persistence, forms, and Web support are not implemented.
+- PDFium uses its own Android URL-loading implementation; other built-in engines use the shared Ktor loader.
+- A successful compile does not replace runtime testing with real PDFs, authenticated endpoints, redirects, and error responses.
+
+## Installation
+
+### Android local preview
+
+For local development, publish Android artifacts from the repository root:
 
 ```bash
 ./gradlew publishAndroidToMavenLocal
 ```
 
-This publishes Android release artifacts only. It does not publish KMP metadata or compile iOS/Desktop targets. Use `./gradlew publishToMavenLocal` only when validating all configured targets.
-
-The initial coordinates are:
-
-- Group: `io.github.tauseefahmad`
-- Version: `0.1.0-SNAPSHOT`
-- Viewer: `io.github.tauseefahmad:composepdf-viewer:0.1.0-SNAPSHOT`
-- Core: `io.github.tauseefahmad:composepdf-core:0.1.0-SNAPSHOT`
-- Optional Android PDFium: `io.github.tauseefahmad:composepdf-pdfium-android:0.1.0-SNAPSHOT`
-
-See [local publishing and consumer setup](docs/publishing.md).
-
-## Android quick start
-
-Add `mavenLocal()` to the consuming application's dependency repositories while testing a locally published snapshot, then add:
+Add `mavenLocal()` to the consuming app's dependency repositories, then use the Android variant coordinates:
 
 ```kotlin
 dependencies {
-    implementation("io.github.tauseefahmad:composepdf-viewer:0.1.0-SNAPSHOT")
+    implementation("io.github.tauseefahmad:composepdf-viewer-android:0.1.0-SNAPSHOT")
 }
 ```
 
-Create the engine factory and viewer state:
+The viewer exposes core types transitively. Add the optional PDFium artifact only when you intend to use its backend:
 
 ```kotlin
-val engineFactory = androidPdfEngineFactory(context)
-val state = rememberPdfViewerState(engineFactory)
-
-ComposePDF(
-    source = PdfSource.Uri(pdfUri.toString()),
-    engineFactory = engineFactory,
-    state = state,
-    modifier = Modifier.fillMaxSize(),
-)
+implementation("io.github.tauseefahmad:composepdf-pdfium-android-android:0.1.0-SNAPSHOT")
 ```
 
-The caller is responsible for obtaining and retaining access to the supplied URI. For in-memory documents use `PdfSource.Bytes(bytes)`; for a local path use `PdfSource.File(path)`.
+See [local publishing and consumer integration](docs/publishing.md) for the exact setup. These are Maven Local preview artifacts, not a public Maven Central release.
 
-For optional PDFium support, add:
+## Android quick start
+
+Add internet permission when loading remote PDFs:
+
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
+```
+
+Create an engine factory and viewer state:
 
 ```kotlin
-implementation("io.github.tauseefahmad:composepdf-pdfium-android:0.1.0-SNAPSHOT")
+@Composable
+fun PdfViewerScreen(url: String) {
+    val context = LocalContext.current
+    val engineFactory = remember(context) { androidPdfEngineFactory(context) }
+    val state = rememberPdfViewerState(engineFactory)
+
+    ComposePDF(
+        source = PdfSource.Url(
+            url = url,
+            headers = mapOf("Authorization" to "Bearer <token>"),
+        ),
+        engineFactory = engineFactory,
+        state = state,
+        modifier = Modifier.fillMaxSize(),
+    )
+}
 ```
 
-Then create `androidPdfiumEngineFactory(context)` and select it through your engine registry or pass it directly as the viewer's engine factory.
-
-## Features
-
-- Multiplatform rendering engine abstraction
-- Android PdfRenderer, iOS PDFKit, Desktop PDFBox
-- Pinch zoom, pan, double-tap zoom, fit modes
-- Previous/next and direct page navigation
-- Text search on engines with text extraction
-- Lazy page thumbnails and page navigation
-- Document outline extraction on Desktop PDFBox and hierarchical bookmark navigation
-
-Text selection, rendered search highlights, annotation persistence, forms, and Web support are not currently implemented.
+For local documents, use `PdfSource.Uri(uri.toString())`, `PdfSource.File(path)`, or `PdfSource.Bytes(bytes)`. The application is responsible for obtaining and retaining access to platform URIs.
 
 ## Architecture
 
-The viewer depends on `PdfRenderEngine`, not on a concrete PDF backend. Applications can provide custom engines and should inspect engine capabilities before presenting optional controls. Each factory should return a fresh engine instance per document session.
+The viewer depends on the `PdfRenderEngine` abstraction rather than a concrete backend. Applications can provide custom engines through `PdfEngineFactory`. Inspect engine capabilities before showing optional features. Each factory should create a fresh engine instance for each document session.
 
-## Project constraints
+## Compatibility
 
-This repository contains the library only. It intentionally has no CI workflows, automated test infrastructure, or sample application.
+The preview toolchain currently uses Kotlin 2.2.20, Compose Multiplatform 1.9.3, Android Gradle Plugin 8.13.2, Gradle 8.14.3, and JDK 17. Android modules compile with compileSdk 36 and minSdk 24.
+
+This is a build configuration, not a promise that every consumer toolchain version is compatible. The library does not guarantee compatibility with all Kotlin, Gradle, AGP, Compose, or Android versions. Validate the published artifact with your application's toolchain and target devices.
+
+## Project scope
+
+This repository contains library modules and documentation only. It intentionally does not include a sample application, CI workflows, or a test suite. Milestone 2 advanced editing features (text selection, annotations, forms, and related editing tools) are outside the current planned release scope.
+
+## Publishing and release status
+
+The project currently supports Maven Local publishing for Android preview artifacts. Public Maven Central publishing is not complete yet: namespace verification, Central Portal deployment configuration, signing credentials, release validation, and a non-snapshot release remain required.
+
+See [publishing documentation](docs/publishing.md).
 
 ## License
 
