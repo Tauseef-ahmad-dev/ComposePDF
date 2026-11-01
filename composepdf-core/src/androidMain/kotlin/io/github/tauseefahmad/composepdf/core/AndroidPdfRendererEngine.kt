@@ -43,6 +43,9 @@ class AndroidPdfRendererEngine(
         password: String?,
     ): PdfDocumentInfo = withContext(Dispatchers.IO) {
         closeResources()
+        require(password == null) {
+            "The Android PdfRenderer backend does not support password-protected PDFs."
+        }
 
         val fileDescriptor = when (source) {
             is PdfSource.File -> ParcelFileDescriptor.open(
@@ -57,10 +60,18 @@ class AndroidPdfRendererEngine(
                 ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
             }
 
-            is PdfSource.Uri -> appContext.contentResolver.openFileDescriptor(
-                Uri.parse(source.value),
-                "r",
-            ) ?: throw IllegalArgumentException("Unable to open PDF URI: ${source.value}")
+            is PdfSource.Uri -> {
+                val file = File.createTempFile("composepdf-uri-", ".pdf", appContext.cacheDir)
+                temporaryFile = file
+                val input = appContext.contentResolver.openInputStream(Uri.parse(source.value))
+                    ?: throw IllegalArgumentException("Unable to open PDF URI: ${source.value}")
+                input.use { sourceStream ->
+                    FileOutputStream(file).use { targetStream ->
+                        sourceStream.copyTo(targetStream)
+                    }
+                }
+                ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+            }
 
             is PdfSource.Url -> throw UnsupportedOperationException(
                 "URL loading is not included in the Android PdfRenderer backend yet.",
