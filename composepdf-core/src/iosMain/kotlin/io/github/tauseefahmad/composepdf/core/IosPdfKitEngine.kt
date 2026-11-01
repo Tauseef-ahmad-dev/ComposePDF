@@ -75,7 +75,7 @@ class IosPdfKitEngine : PdfRenderEngine {
                 val pdf = requireNotNull(document) { "No PDF document is open." }
                 require(pageIndex in 0 until pdf.pageCount.toInt()) { "Page index is out of range." }
                 val page = requireNotNull(pdf.pageAtIndex(pageIndex.toULong()))
-                val bounds = page.boundsForBox(0L)
+                val bounds = page.boundsForBox(0uL)
                 PdfPageMetadata(
                     pageIndex = pageIndex,
                     width = bounds.useContents { size.width.toFloat() },
@@ -94,7 +94,7 @@ class IosPdfKitEngine : PdfRenderEngine {
             val page: PDFPage = requireNotNull(pdf.pageAtIndex(pageIndex.toULong()))
             val thumbnail = page.thumbnailOfSize(
                 size = CGSizeMake(options.width.toDouble(), options.height.toDouble()),
-                forBox = 0L,
+                forBox = 0uL,
             )
             val png = UIImagePNGRepresentation(thumbnail)
                 ?: throw IllegalStateException("PDFKit failed to encode the rendered page.")
@@ -118,7 +118,7 @@ class IosPdfKitEngine : PdfRenderEngine {
     private fun ByteArray.toNSData(): NSData {
         require(isNotEmpty()) { "PDF data cannot be empty." }
         return usePinned { pinned ->
-            NSData(bytes = pinned.addressOf(0), length = size.toULong())
+            NSData.dataWithBytes(pinned.addressOf(0), length = size.toULong())
         }
     }
 
@@ -126,7 +126,7 @@ class IosPdfKitEngine : PdfRenderEngine {
         val count = length.toInt()
         if (count == 0) return byteArrayOf()
         val source = bytes!!.reinterpret<ByteVar>()
-        return ByteArray(count) { index -> source.plus(index).pointed.value.toByte() }
+        return ByteArray(count) { index -> source[index].value }
     }
 }
 
