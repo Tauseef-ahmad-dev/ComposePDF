@@ -34,6 +34,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.platform.LocalDensity
 import io.github.tauseefahmad.composepdf.core.PdfEngineFactory
 import io.github.tauseefahmad.composepdf.core.PdfError
 import io.github.tauseefahmad.composepdf.core.PdfSource
@@ -165,6 +166,7 @@ private fun PdfPage(
 ) {
     val renderFailed = remember(pageIndex, state) { mutableStateOf(false) }
 
+    val density = LocalDensity.current.density
     BoxWithConstraints(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center,
@@ -183,18 +185,16 @@ private fun PdfPage(
             PdfFitMode.FitPage -> {
                 val metadata = pageMetadata.value
                 if (metadata == null || viewportHeight == null) 1f else {
-                    val pageAspectRatio = metadata.width / metadata.height
-                    minOf(1f, viewportWidth.toFloat() / (viewportHeight * pageAspectRatio))
+                    minOf(1f, minOf(viewportWidth / metadata.width / density, viewportHeight / metadata.height / density))
                 }
             }
             PdfFitMode.ActualSize -> {
-                val metadata = pageMetadata.value
-                if (metadata == null) 1f else 72f / density
+                1f
             }
         }
         val userScale = zoomState.scale.value
         val scale = fitScale * userScale
-        val targetWidth = (viewportWidth * scale).toInt().coerceAtLeast(1)
+        val targetWidth = (viewportWidth * userScale).toInt().coerceAtLeast(1)
 
         LaunchedEffect(pageIndex, targetWidth, state) {
             if (pageImage == null) {
