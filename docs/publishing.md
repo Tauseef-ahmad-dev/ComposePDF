@@ -2,19 +2,23 @@
 
 ComposePDF currently publishes snapshots to the local Maven repository for consumer-app validation. This is not a public Maven Central release.
 
-## 1. Publish from the library repository
+## 1. Publish Android artifacts
 
-Use a JDK 17-compatible environment and run from the ComposePDF repository root:
+From the ComposePDF repository root, using a JDK 17-compatible environment:
 
 ```bash
-./gradlew publishToMavenLocal
+./gradlew publishAndroidToMavenLocal
 ```
 
-The publications are installed in the local Maven repository (normally `~/.m2/repository`). The initial version is `0.1.0-SNAPSHOT`. After changing library code, publish again before rebuilding the consuming app.
+This publishes Kotlin Multiplatform metadata and Android release variants for core, viewer, and optional PDFium. It deliberately avoids compiling iOS and Desktop targets, so Android integration does not depend on unrelated platform backends.
 
-## 2. Add the local repository to your Android app
+The aggregate `publishToMavenLocal` task publishes every configured target and may fail if an unrelated platform backend does not compile. Use it only when validating all configured targets.
 
-In the consuming app's `settings.gradle.kts`, add `mavenLocal()` to dependency repositories:
+Artifacts are installed in the local Maven repository (normally `~/.m2/repository`). The initial version is `0.1.0-SNAPSHOT`. Republish after changing library code and before rebuilding the consuming app.
+
+## 2. Add Maven Local to your Android app
+
+In the consuming app's `settings.gradle.kts`:
 
 ```kotlin
 dependencyResolutionManagement {
