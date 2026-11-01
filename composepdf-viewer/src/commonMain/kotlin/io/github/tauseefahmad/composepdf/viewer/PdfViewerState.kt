@@ -58,10 +58,20 @@ class PdfViewerState internal constructor(
     private val renderedPages = mutableStateMapOf<Int, ImageBitmap>()
     private val cacheOrder = mutableStateListOf<Int>()
     private val renderMutex = Mutex()
-    private val maxCachedPages = 12
+    private var maxCachedPages = 12
     private var engine: PdfRenderEngine? = null
 
     internal fun pageImage(pageIndex: Int): ImageBitmap? = renderedPages[pageIndex]
+
+    /** Applies the viewer's configured bitmap-cache limit and evicts oldest pages immediately. */
+    internal fun configurePageCache(maxPages: Int) {
+        require(maxPages >= 1) { "maxCachedPages must be at least 1." }
+        maxCachedPages = maxPages
+        while (cacheOrder.size > maxCachedPages) {
+            val evictedPage = cacheOrder.removeAt(0)
+            renderedPages.remove(evictedPage)
+        }
+    }
 
     private val pageMetadataCache = mutableStateMapOf<Int, io.github.tauseefahmad.composepdf.core.PdfPageMetadata>()
 
