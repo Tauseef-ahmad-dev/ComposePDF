@@ -29,6 +29,7 @@ kotlin {
         commonMain.dependencies {
             api(compose.ui)
             implementation(libs.kotlinx.coroutines.core)
+            implementation("io.ktor:ktor-client-cio:3.2.3")
         }
 
         jvmMain.dependencies {
