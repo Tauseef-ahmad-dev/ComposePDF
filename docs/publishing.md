@@ -10,7 +10,7 @@ From the ComposePDF repository root, using a JDK 17-compatible environment:
 ./gradlew publishAndroidToMavenLocal
 ```
 
-This publishes Kotlin Multiplatform metadata and Android release variants for core, viewer, and optional PDFium. It deliberately avoids compiling iOS and Desktop targets, so Android integration does not depend on unrelated platform backends.
+This publishes Android release artifacts for core, viewer, and optional PDFium. It intentionally skips the Kotlin Multiplatform metadata publication because generating that metadata compiles all configured platform source sets, including iOS. The Android publication uses the documented base artifact coordinates.
 
 The aggregate `publishToMavenLocal` task publishes every configured target and may fail if an unrelated platform backend does not compile. Use it only when validating all configured targets.
 
