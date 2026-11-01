@@ -33,6 +33,6 @@ Engine implementations own their threading rules. They must serialize access whe
 | Android PdfRenderer | Initial adapter |
 | iOS PDFKit | Initial adapter; native build validation pending |
 | Desktop Apache PDFBox | Initial adapter; JVM build validation pending |
-| PDFium | Not bundled; platform-specific integration remains |
+| Android PDFium | Optional `composepdf-pdfium-android` module; validation pending |\n| iOS / Desktop PDFium | Not bundled |
 
-PDFium is not pulled into the common dependency graph until one distribution can be pinned and packaged for the supported Android, iOS, and Desktop targets without forcing incompatible Kotlin toolchains.
+The Android PDFium adapter is an opt-in module. Add `implementation(projects.composepdfPdfiumAndroid)` and register `androidPdfiumEngineFactory(context)` as the PDFium factory. iOS and Desktop PDFium bindings remain future work; the platform-specific native distributions cannot yet be shared safely through one dependency.
