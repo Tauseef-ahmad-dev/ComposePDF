@@ -7,12 +7,19 @@ plugins {
     alias(libs.plugins.compose.compiler)
 }
 
+import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
+
 kotlin {
     jvmToolchain(17)
 
     androidTarget {
         publishLibraryVariants("release")
     }
+
+    // One distributable binary for physical iOS devices and simulator architectures.
+    // The framework exports core so Swift consumers see the public viewer/core API
+    // through a single ComposePDFViewer module.
+    val composePdfXcFramework = XCFramework("ComposePDFViewer")
 
     listOf(
         iosArm64(),
@@ -21,7 +28,10 @@ kotlin {
     ).forEach { target ->
         target.binaries.framework {
             baseName = "ComposePDFViewer"
+            isStatic = true
+            binaryOption("bundleId", "io.github.tauseefahmad.composepdf.viewer")
             export(project(":composepdf-core"))
+            composePdfXcFramework.add(this)
         }
     }
 
