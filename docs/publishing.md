@@ -167,6 +167,16 @@ Inspect the generated bundle before distributing it:
 plutil -p composepdf-viewer/build/XCFrameworks/release/ComposePDFViewer.xcframework/Info.plist
 ```
 
+The viewer now exposes an iOS UIKit entry point from its `iosMain` source set:
+
+```kotlin
+fun composePdfViewController(url: String): UIViewController
+```
+
+It creates a ComposeUIViewController, configures `iosPdfKitEngineFactory()`, and opens a remote document through `PdfSource.Url` (the shared Ktor loader downloads the bytes before PDFKit opens them). This convenience API currently accepts an HTTP(S) URL and does not expose custom request headers or a Swift-native document picker API.
+
+After building the XCFramework, inspect its generated Objective-C header to confirm the exact Swift-imported symbol, then wrap the returned UIViewController in a SwiftUI `UIViewControllerRepresentable`. Compile and exercise that bridge in a clean Xcode app before advertising the SPM package.
+
 The XCFramework build is the binary input for the native Swift package. A complete SPM release additionally needs:
 - A ZIP archive containing the XCFramework.
 - A SHA-256 checksum generated with `swift package compute-checksum`.
