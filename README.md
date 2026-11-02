@@ -143,9 +143,48 @@ There are two different iOS integration scenarios:
 
 **Kotlin Multiplatform iOS application:** If the iOS app is part of a Kotlin Multiplatform project, use the KMP dependency shown above in `commonMain`, configure the iOS targets, and use the shared Compose UI in the iOS application. The iOS rendering backend is PDFKit. This is the supported Kotlin-side route for using the ComposePDF viewer on iOS.
 
-**Native Swift / Xcode-only application:** Direct installation through Swift Package Manager is **not available yet**. Maven Central publishes Kotlin Multiplatform artifacts; Xcode's Swift Package Manager cannot consume those Maven artifacts directly. The viewer now includes an iOS UIKit entry point, `composePdfViewController(url:)`, which hosts the Compose viewer with the PDFKit engine for a remote HTTP(S) PDF. The XCFramework build and a clean Xcode consumer app still need validation, followed by a versioned binary release and Swift package manifest. Do not add a guessed SPM URL or binary target at this stage.
+**Native Swift / Xcode-only application:** Add this repository in Xcode using **File → Add Package Dependencies** and the repository URL:
 
-The SPM distribution is planned; until it is released, ComposePDF should be treated as a Kotlin Multiplatform library for iOS rather than a ready-to-add native Swift package.
+```text
+https://github.com/Tauseef-ahmad-dev/ComposePDF
+```
+
+Select the `ComposePDFViewer` product. The Swift package currently distributes the iOS alpha XCFramework from the GitHub release `ios-0.1.0-alpha.1`.
+
+A SwiftUI wrapper can host the UIKit entry point:
+
+```swift
+import SwiftUI
+import ComposePDFViewer
+
+struct ComposePDFScreen: UIViewControllerRepresentable {
+    let pdfURL: String
+
+    func makeUIViewController(context: Context) -> UIViewController {
+        ComposePDFViewControllerKt.composePdfViewController(url: pdfURL)
+    }
+
+    func updateUIViewController(
+        _ uiViewController: UIViewController,
+        context: Context
+    ) {
+        // Recreate this representable when pdfURL changes.
+    }
+}
+```
+
+Use it in a SwiftUI view:
+
+```swift
+struct ContentView: View {
+    var body: some View {
+        ComposePDFScreen(pdfURL: "https://example.com/sample.pdf")
+            .ignoresSafeArea()
+    }
+}
+```
+
+This alpha entry point accepts publicly accessible HTTP(S) PDF URLs only; custom request headers and a native document picker are not exposed by this convenience API. The binary package has not yet been validated in a clean external Xcode consumer project.
 
 ## Android quick start
 
