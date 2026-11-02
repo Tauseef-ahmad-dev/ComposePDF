@@ -175,6 +175,50 @@ fun composePdfViewController(url: String): UIViewController
 
 It creates a ComposeUIViewController, configures `iosPdfKitEngineFactory()`, and opens a remote document through `PdfSource.Url` (the shared Ktor loader downloads the bytes before PDFKit opens them). This convenience API currently accepts an HTTP(S) URL and does not expose custom request headers or a Swift-native document picker API.
 
+The generated Objective-C header confirms this Swift-imported API:
+
+```swift
+ComposePDFViewControllerKt.composePdfViewController(url: pdfURL)
+```
+
+A SwiftUI host can wrap the returned controller:
+
+```swift
+import SwiftUI
+import ComposePDFViewer
+
+struct ComposePDFScreen: UIViewControllerRepresentable {
+    let pdfURL: String
+
+    func makeUIViewController(context: Context) -> UIViewController {
+        ComposePDFViewControllerKt.composePdfViewController(url: pdfURL)
+    }
+
+    func updateUIViewController(
+        _ uiViewController: UIViewController,
+        context: Context
+    ) {
+        // The current Kotlin entry point creates its document when the
+        // controller is created. Recreate the representable when pdfURL changes.
+    }
+}
+```
+
+Use it in a SwiftUI view:
+
+```swift
+struct ContentView: View {
+    var body: some View {
+        ComposePDFScreen(
+            pdfURL: "https://example.com/sample.pdf"
+        )
+        .ignoresSafeArea()
+    }
+}
+```
+
+The exported Objective-C header exposes the function as `ComposePDFViewControllerKt.composePdfViewController(url:)`. This confirms symbol export, but does not by itself prove a clean Xcode app links and runs the framework. Build and exercise this wrapper in a clean Xcode app before advertising the SPM package.
+
 After building the XCFramework, inspect its generated Objective-C header to confirm the exact Swift-imported symbol, then wrap the returned UIViewController in a SwiftUI `UIViewControllerRepresentable`. Compile and exercise that bridge in a clean Xcode app before advertising the SPM package.
 
 The XCFramework build is the binary input for the native Swift package. A complete SPM release additionally needs:
