@@ -2,7 +2,7 @@
 
 ComposePDF is an open-source Compose Multiplatform PDF rendering and viewing library for **Android, iOS, and Desktop JVM**. It provides a shared Compose viewer API with platform-specific rendering engines.
 
-> **Current release: `0.1.0-alpha.1`.** This is an alpha release, not a stable `1.0.0` release. Maven Central consumers should use it only after the deployment is marked **Published** in the Central Portal. Runtime compatibility and performance must still be validated in consuming applications.
+> **Latest stable release: `0.1.0`**, published to Maven Central. The native Swift Package Manager binary still points to the separate `0.1.0` XCFramework release; see the iOS installation notes below. Runtime compatibility and performance should still be validated in consuming applications.
 
 ## Platform support
 
@@ -44,7 +44,7 @@ Feature parity is not guaranteed. Inspect `PdfEngineCapabilities` before exposin
 
 ## Installation
 
-The examples below use `0.1.0-alpha.1`. Replace it with a later version when one is published. Make sure the alpha deployment is marked **Published** in Maven Central before resolving it.
+The Maven Central examples below use the stable `0.1.0` release.
 
 ### 1. Android-only project (Jetpack Compose)
 
@@ -63,7 +63,7 @@ In the Android application module's `build.gradle.kts`, add the Android publicat
 
 ```kotlin
 dependencies {
-    implementation("io.github.tauseef-ahmad-dev:composepdf-viewer-android:0.1.0-alpha.1")
+    implementation("io.github.tauseef-ahmad-dev:composepdf-viewer-android:0.1.0")
 }
 ```
 
@@ -71,7 +71,7 @@ The viewer exposes core types transitively. Add the optional PDFium artifact onl
 
 ```kotlin
 dependencies {
-    implementation("io.github.tauseef-ahmad-dev:composepdf-pdfium-android-android:0.1.0-alpha.1")
+    implementation("io.github.tauseef-ahmad-dev:composepdf-pdfium-android-android:0.1.0")
 }
 ```
 
@@ -117,7 +117,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.tauseef-ahmad-dev:composepdf-viewer:0.1.0-alpha.1")
+            implementation("io.github.tauseef-ahmad-dev:composepdf-viewer:0.1.0")
         }
     }
 }
@@ -132,7 +132,7 @@ The Android-only PDFium engine is an opt-in Android dependency. Add it to `andro
 ```kotlin
 sourceSets {
     androidMain.dependencies {
-        implementation("io.github.tauseef-ahmad-dev:composepdf-pdfium-android-android:0.1.0-alpha.1")
+        implementation("io.github.tauseef-ahmad-dev:composepdf-pdfium-android-android:0.1.0")
     }
 }
 ```
@@ -184,7 +184,7 @@ struct ContentView: View {
 }
 ```
 
-This alpha entry point accepts publicly accessible HTTP(S) PDF URLs only; custom request headers and a native document picker are not exposed by this convenience API. The binary package has not yet been validated in a clean external Xcode consumer project.
+This Swift entry point is still distributed as the `ios-0.1.0-alpha.1` binary package. It accepts HTTP(S) PDF URLs only; custom request headers and a native document picker are not exposed by this convenience API. The binary package has not yet been validated in a clean external Xcode consumer project. The Maven Central `0.1.0` release does not automatically update the separate Swift binary.
 
 ## Android quick start
 
@@ -232,10 +232,11 @@ This repository contains library modules and documentation only. It intentionall
 ## Publishing and release status
 
 - Maven Central namespace: `io.github.tauseef-ahmad-dev`
-- Current alpha version: `0.1.0-alpha.1`
-- Android-only consumers: use `composepdf-viewer-android`
-- Kotlin Multiplatform consumers: use `composepdf-viewer`
-- Native Swift / Xcode SPM distribution: not yet available; planned separately
+- Current stable Maven Central version: `0.1.0`
+- Android-only consumers: use `composepdf-viewer-android:0.1.0`
+- Kotlin Multiplatform consumers: use `composepdf-viewer:0.1.0`
+- Optional Android PDFium: use `composepdf-pdfium-android-android:0.1.0`
+- Native Swift / Xcode SPM distribution: currently uses the separate `ios-0.1.0-alpha.1` XCFramework binary; it has not yet been validated in a clean external Xcode consumer project.
 
 See [publishing and consumer integration](docs/publishing.md) for Maven Local development, publication configuration, and consumer validation guidance.
 
