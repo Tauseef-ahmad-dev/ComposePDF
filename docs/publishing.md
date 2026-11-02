@@ -1,6 +1,6 @@
 # Publishing and consumer integration
 
-ComposePDF currently publishes Android preview artifacts to Maven Local. This is not a public Maven Central release.
+ComposePDF supports Android Maven Local preview publishing and Maven Central publication. The `0.1.0-alpha.1` release has been published; validate artifacts in clean consumer projects before relying on them in production.
 
 ## 1. Publish Android preview artifacts
 
@@ -118,7 +118,7 @@ These are the project's current build versions, not a guarantee of compatibility
 
 ## 7. Public Maven Central release checklist
 
-Maven Central publication is configured for the verified namespace `io.github.tauseef-ahmad-dev`. The first alpha release is being prepared. Before publishing a stable version:
+Maven Central publication is configured for the verified namespace `io.github.tauseef-ahmad-dev`. The `0.1.0-alpha.1` release has been published. Stable `0.1.0` must wait until Android, KMP, and iOS consumer validation is complete. Before publishing a stable version:
 
 - Confirm the `io.github.tauseef-ahmad-dev` namespace remains verified in Sonatype Central Portal.
 - Configure the Central Portal publishing/deployment plugin and repository credentials using environment variables or Gradle user properties; never commit credentials.
@@ -146,3 +146,32 @@ Alternatively, use the plugin's supported environment variables and in-memory si
 After namespace verification, credentials, and a distributed public GPG key are ready, set a release version (for example with `VERSION_NAME=0.1.0`) and run `./gradlew publishToMavenCentral`. The plugin uploads a deployment for validation; manually publish it in the Central Portal unless automatic release is explicitly configured. Do not run this task until the Sonatype namespace and credentials are confirmed.
 
 Do not treat `publishAndroidToMavenLocal` as a Maven Central publishing task. Do not publish a public stable release until all platform artifacts and clean consumer projects have been validated.
+
+## 8. Build an iOS XCFramework for Swift Package Manager
+
+The viewer module configures a single `ComposePDFViewer.xcframework` containing iOS device arm64 and simulator arm64/x86_64 slices. Build it on macOS with Xcode and the project's configured JDK:
+
+```bash
+./gradlew :composepdf-viewer:assembleComposePDFViewerReleaseXCFramework
+```
+
+Expected output:
+
+```text
+composepdf-viewer/build/XCFrameworks/release/ComposePDFViewer.xcframework
+```
+
+Inspect the generated bundle before distributing it:
+
+```bash
+plutil -p composepdf-viewer/build/XCFrameworks/release/ComposePDFViewer.xcframework/Info.plist
+```
+
+The XCFramework build is the binary input for the native Swift package. A complete SPM release additionally needs:
+- A ZIP archive containing the XCFramework.
+- A SHA-256 checksum generated with `swift package compute-checksum`.
+- A versioned binary release asset hosted at a stable HTTPS URL.
+- A `Package.swift` manifest with a `binaryTarget` that uses that exact URL and checksum.
+- A Swift-facing Compose entry point and a clean Xcode consumer test that presents a PDF.
+
+**SPM is not ready for consumers yet.** Do not publish a `Package.swift` binary target or advertise a SwiftPM installation URL until the XCFramework has been built, uploaded, checksum-verified, and tested in a clean Xcode app. Kotlin Multiplatform consumers can use the Gradle KMP publication; native Swift-only consumers need the separately packaged XCFramework.
