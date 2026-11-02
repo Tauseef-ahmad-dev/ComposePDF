@@ -6,7 +6,7 @@ plugins {
 }
 
 allprojects {
-    group = "io.github.tauseefahmad"
+    group = "io.github.tauseef-ahmad-dev"
     version = providers.gradleProperty("VERSION_NAME").getOrElse("0.1.0-SNAPSHOT")
 }
 

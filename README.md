@@ -56,14 +56,14 @@ Add `mavenLocal()` to the consuming app's dependency repositories, then use the 
 
 ```kotlin
 dependencies {
-    implementation("io.github.tauseefahmad:composepdf-viewer-android:0.1.0-SNAPSHOT")
+    implementation("io.github.tauseef-ahmad-dev:composepdf-viewer-android:0.1.0-SNAPSHOT")
 }
 ```
 
 The viewer exposes core types transitively. Add the optional PDFium artifact only when you intend to use its backend:
 
 ```kotlin
-implementation("io.github.tauseefahmad:composepdf-pdfium-android-android:0.1.0-SNAPSHOT")
+implementation("io.github.tauseef-ahmad-dev:composepdf-pdfium-android-android:0.1.0-SNAPSHOT")
 ```
 
 See [local publishing and consumer integration](docs/publishing.md) for the exact setup. These are Maven Local preview artifacts, not a public Maven Central release.
@@ -115,7 +115,7 @@ This repository contains library modules and documentation only. It intentionall
 
 ## Publishing and release status
 
-The project currently supports Maven Local publishing for Android preview artifacts. Public Maven Central publishing is not complete yet: namespace verification, Central Portal deployment configuration, signing credentials, release validation, and a non-snapshot release remain required.
+The project currently supports Maven Local publishing for Android preview artifacts. Maven Central namespace `io.github.tauseef-ahmad-dev` is verified. The first alpha release is being prepared; runtime validation in clean consumer applications remains necessary.
 
 See [publishing documentation](docs/publishing.md).
 
