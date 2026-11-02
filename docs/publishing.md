@@ -135,7 +135,6 @@ For future releases:
 - Configure in-memory or file-backed signing with a valid GPG key and publish signatures for every publication.
 - Set a non-snapshot version through `VERSION_NAME`.
 - Validate POM metadata, source/Javadoc artifacts as required by the Central Portal, licenses, and SCM links.
-- Validate Android, iOS, and Desktop artifacts from clean consumer projects.
 - Validate Android, iOS, and Desktop artifacts from clean consumer projects before claiming compatibility with those consumer configurations.
 - Publish a release candidate to a staging workflow, verify the resolved artifacts, then publish the stable release.
 - Create a Git tag and GitHub release with supported toolchain versions, platform limitations, and migration notes.
