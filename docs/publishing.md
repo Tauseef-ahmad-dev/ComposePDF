@@ -16,9 +16,9 @@ The Android publication artifact IDs include the Android target suffix. Expected
 
 | Module | Maven coordinate |
 |---|---|
-| Core | `io.github.tauseefahmad:composepdf-core-android:0.1.0-SNAPSHOT` |
-| Viewer | `io.github.tauseefahmad:composepdf-viewer-android:0.1.0-SNAPSHOT` |
-| Android PDFium | `io.github.tauseefahmad:composepdf-pdfium-android-android:0.1.0-SNAPSHOT` |
+| Core | `io.github.tauseef-ahmad-dev:composepdf-core-android:0.1.0-SNAPSHOT` |
+| Viewer | `io.github.tauseef-ahmad-dev:composepdf-viewer-android:0.1.0-SNAPSHOT` |
+| Android PDFium | `io.github.tauseef-ahmad-dev:composepdf-pdfium-android-android:0.1.0-SNAPSHOT` |
 
 Artifacts are installed in `~/.m2/repository`. Republish after changing library code. If Gradle keeps an older artifact cached, stop Gradle and refresh dependencies in the consumer app.
 
@@ -44,7 +44,7 @@ In the Android app module:
 
 ```kotlin
 dependencies {
-    implementation("io.github.tauseefahmad:composepdf-viewer-android:0.1.0-SNAPSHOT")
+    implementation("io.github.tauseef-ahmad-dev:composepdf-viewer-android:0.1.0-SNAPSHOT")
 }
 ```
 
@@ -52,7 +52,7 @@ The viewer exposes core types transitively. For the optional PDFium engine:
 
 ```kotlin
 dependencies {
-    implementation("io.github.tauseefahmad:composepdf-pdfium-android-android:0.1.0-SNAPSHOT")
+    implementation("io.github.tauseef-ahmad-dev:composepdf-pdfium-android-android:0.1.0-SNAPSHOT")
 }
 ```
 
@@ -118,9 +118,9 @@ These are the project's current build versions, not a guarantee of compatibility
 
 ## 7. Public Maven Central release checklist
 
-Maven Central publication is not configured as a completed release workflow yet. Before publishing a stable version:
+Maven Central publication is configured for the verified namespace `io.github.tauseef-ahmad-dev`. The first alpha release is being prepared. Before publishing a stable version:
 
-- Verify the `io.github.tauseefahmad` namespace in Sonatype Central Portal.
+- Confirm the `io.github.tauseef-ahmad-dev` namespace remains verified in Sonatype Central Portal.
 - Configure the Central Portal publishing/deployment plugin and repository credentials using environment variables or Gradle user properties; never commit credentials.
 - Configure in-memory or file-backed signing with a valid GPG key and publish signatures for every publication.
 - Set a non-snapshot version through `VERSION_NAME`.
