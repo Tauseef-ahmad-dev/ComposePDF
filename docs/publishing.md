@@ -1,6 +1,6 @@
 # Publishing and consumer integration
 
-ComposePDF supports Android Maven Local preview publishing and Maven Central publication. The `0.1.0-alpha.1` release has been published; validate artifacts in clean consumer projects before relying on them in production.
+ComposePDF supports Android Maven Local preview publishing and Maven Central publication. Stable version `0.1.0` has passed Central Portal validation and has been published. Validate artifacts in clean consumer projects before relying on them in production.
 
 ## 1. Publish Android preview artifacts
 
@@ -116,9 +116,19 @@ The current project build uses:
 
 These are the project's current build versions, not a guarantee of compatibility with every consumer toolchain. Keep a tested compatibility matrix in release notes as additional consumer configurations are validated.
 
-## 7. Public Maven Central release checklist
+## 7. Maven Central release status and future releases
 
-Maven Central publication is configured for the verified namespace `io.github.tauseef-ahmad-dev`. The `0.1.0-alpha.1` release has been published. Stable `0.1.0` must wait until Android, KMP, and iOS consumer validation is complete. Before publishing a stable version:
+Maven Central publication is configured for the verified namespace `io.github.tauseef-ahmad-dev`. Stable `0.1.0` has been published. Central Portal validated 23 of 23 components, including Core and Viewer Android, iOS device/simulator, and Desktop JVM publications, plus Android PDFium.
+
+The published coordinates include:
+
+| Consumer | Coordinate |
+|---|---|
+| Android-only viewer | `io.github.tauseef-ahmad-dev:composepdf-viewer-android:0.1.0` |
+| KMP viewer (Android, iOS, Desktop) | `io.github.tauseef-ahmad-dev:composepdf-viewer:0.1.0` |
+| Android PDFium backend | `io.github.tauseef-ahmad-dev:composepdf-pdfium-android-android:0.1.0` |
+
+For future releases:
 
 - Confirm the `io.github.tauseef-ahmad-dev` namespace remains verified in Sonatype Central Portal.
 - Configure the Central Portal publishing/deployment plugin and repository credentials using environment variables or Gradle user properties; never commit credentials.
@@ -126,26 +136,31 @@ Maven Central publication is configured for the verified namespace `io.github.ta
 - Set a non-snapshot version through `VERSION_NAME`.
 - Validate POM metadata, source/Javadoc artifacts as required by the Central Portal, licenses, and SCM links.
 - Validate Android, iOS, and Desktop artifacts from clean consumer projects.
+- Validate Android, iOS, and Desktop artifacts from clean consumer projects before claiming compatibility with those consumer configurations.
 - Publish a release candidate to a staging workflow, verify the resolved artifacts, then publish the stable release.
 - Create a Git tag and GitHub release with supported toolchain versions, platform limitations, and migration notes.
 
 ### Configure credentials locally
 
-Create a Central Portal user token and configure it in `~/.gradle/gradle.properties` (never in this repository):
+Create a Central Portal user token and provide its generated username and password to Gradle through environment variables in the publishing terminal (do not commit credentials or paste them into source files):
 
-```properties
-mavenCentralUsername=YOUR_CENTRAL_PORTAL_TOKEN_USERNAME
-mavenCentralPassword=YOUR_CENTRAL_PORTAL_TOKEN_PASSWORD
-signing.keyId=YOUR_GPG_KEY_ID
-signing.password=YOUR_GPG_KEY_PASSWORD
-signing.secretKeyRingFile=/absolute/path/to/secring.gpg
+```bash
+export ORG_GRADLE_PROJECT_mavenCentralUsername="YOUR_CENTRAL_TOKEN_USERNAME"
+export ORG_GRADLE_PROJECT_mavenCentralPassword="YOUR_CENTRAL_TOKEN_PASSWORD"
 ```
 
-Alternatively, use the plugin's supported environment variables and in-memory signing key properties. See the [plugin's credential documentation](https://vanniktech.github.io/gradle-maven-publish-plugin/central/#secrets).
+Keep GPG signing configured separately using the repository's `useGpgCmd()` setup. See the [plugin's credential documentation](https://vanniktech.github.io/gradle-maven-publish-plugin/central/#secrets).
 
-After namespace verification, credentials, and a distributed public GPG key are ready, set a release version (for example with `VERSION_NAME=0.1.0`) and run `./gradlew publishToMavenCentral`. The plugin uploads a deployment for validation; manually publish it in the Central Portal unless automatic release is explicitly configured. Do not run this task until the Sonatype namespace and credentials are confirmed.
+After namespace verification, credentials, and a distributed public GPG key are ready, set the release version and upload every module's publications. For example:
 
-Do not treat `publishAndroidToMavenLocal` as a Maven Central publishing task. Do not publish a public stable release until all platform artifacts and clean consumer projects have been validated.
+```bash
+./gradlew -PVERSION_NAME=0.1.0 \\
+  :composepdf-core:publishAllPublicationsToMavenCentralRepository \\
+  :composepdf-viewer:publishAllPublicationsToMavenCentralRepository \\
+  :composepdf-pdfium-android:publishAllPublicationsToMavenCentralRepository
+```
+
+The plugin uploads a deployment for validation. Review the complete component list and validation result in the Central Portal, then manually select **Publish** unless automatic release is explicitly configured. Do not treat `publishAndroidToMavenLocal` as a Maven Central publishing task.
 
 ## 8. Build an iOS XCFramework for Swift Package Manager
 
@@ -228,4 +243,4 @@ The XCFramework build is the binary input for the native Swift package. A comple
 - A `Package.swift` manifest with a `binaryTarget` that uses that exact URL and checksum.
 - A Swift-facing Compose entry point and a clean Xcode consumer test that presents a PDF.
 
-**SPM is not ready for consumers yet.** Do not publish a `Package.swift` binary target or advertise a SwiftPM installation URL until the XCFramework has been built, uploaded, checksum-verified, and tested in a clean Xcode app. Kotlin Multiplatform consumers can use the Gradle KMP publication; native Swift-only consumers need the separately packaged XCFramework.
+**Current SwiftPM status:** the repository's `Package.swift` points to the `ios-0.1.0-alpha.1` GitHub binary release and its verified checksum. This is separate from the stable Maven Central `0.1.0` release. The XCFramework was built and uploaded, but the package has not yet been validated in a clean external Xcode app. Keep the SwiftPM package clearly labeled as alpha until a matching stable XCFramework is built, uploaded, checksum-verified, and tested in a clean Xcode consumer project. Kotlin Multiplatform consumers can use the stable Gradle KMP publication `composepdf-viewer:0.1.0`.
